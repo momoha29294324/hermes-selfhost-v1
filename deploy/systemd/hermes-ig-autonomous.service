@@ -1,0 +1,62 @@
+# Hermes — Premier contact autonome (envoi sortant)
+#
+# CE FICHIER EST UN MODÈLE. Rien n'y est propre à une machine : les trois
+# valeurs à substituer sont écrites en majuscules entre chevrons, et
+# l'installation échouera bruyamment si l'une reste en place plutôt que de
+# démarrer sur un chemin deviné.
+#
+#   <HERMES_USER>   l'utilisateur système qui possède l'installation
+#   <HERMES_HOME>   la racine du dépôt (ex. /opt/hermes, /srv/hermes, $HOME/hermes)
+#   <NODE_BIN>      le répertoire contenant node/npm (ex. /usr/bin, /usr/local/bin)
+#
+#   sudo install -m 0644 deploy/systemd/hermes-ig-autonomous.service /etc/systemd/system/
+#   sudo sed -i "s|<HERMES_USER>|$USER|; s|<HERMES_HOME>|$PWD|; s|<NODE_BIN>|$(dirname $(command -v node))|" \
+#       /etc/systemd/system/hermes-ig-autonomous.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now hermes-ig-autonomous
+#
+# UN SEUL PROPRIÉTAIRE PAR RÔLE. Les trois runtimes partagent un unique profil
+# de navigateur sous bail exclusif : deux copies du même rôle ne se
+# partageraient pas le travail, elles se disputeraient le bail. `systemctl
+# enable` une seule fois, sur une seule machine.
+[Unit]
+Description=Hermes — Premier contact autonome (envoi sortant)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<HERMES_USER>
+WorkingDirectory=<HERMES_HOME>
+Environment=PATH=<NODE_BIN>:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=<HERMES_HOME>/.env
+ExecStart=<HERMES_HOME>/scripts/ig-autonomous-runtime.sh
+
+# Redémarrage : une panne transitoire ne doit pas demander un humain, et une
+# panne permanente ne doit pas boucler à vide.
+Restart=on-failure
+RestartSec=30
+
+# Arrêt PROPRE. Les rails relâchent le bail du profil et referment le
+# navigateur dans un `finally` ; leur laisser le temps de le faire évite de
+# laisser un verrou derrière soi.
+KillSignal=SIGTERM
+TimeoutStopSec=90
+
+# Mémoire BORNÉE : Chromium fuit sur les processus longs, et un OOM du système
+# entier coûte plus cher qu'un redémarrage du service.
+MemoryMax=3G
+
+# Durcissement. `ProtectHome=` est laissé à `false` DÉLIBÉRÉMENT : le profil de
+# navigateur et le cache Playwright vivent souvent sous le $HOME de
+# l'utilisateur, et les protéger ici fait échouer le lancement de Chromium avec
+# une erreur qui ne dit pas pourquoi.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

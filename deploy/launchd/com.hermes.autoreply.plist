@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hermes — Auto-reponse aux conversations (macOS).
+
+  MODÈLE : remplacer <HERMES_HOME> par la racine de l'installation, et
+  <NODE_BIN> par le répertoire de node.
+
+      sed -e "s|<HERMES_HOME>|$PWD|g" -e "s|<NODE_BIN>|$(dirname $(command -v node))|g" \
+          deploy/launchd/com.hermes.autoreply.plist > ~/Library/LaunchAgents/com.hermes.autoreply.plist
+      launchctl load -w ~/Library/LaunchAgents/com.hermes.autoreply.plist
+
+  AUCUN intervalle n'est déclaré ici, et c'est délibéré : la cadence appartient
+  au runtime, qui la lit dans sa configuration et sait ce qu'il a déjà fait.
+  Un StartInterval de launchd ajouterait un SECOND ordonnanceur, ignorant des
+  plafonds et de la fenêtre d'envoi.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.hermes.autoreply</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string><HERMES_HOME>/scripts/autoreply-runtime.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string><HERMES_HOME></string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string><NODE_BIN>:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key>
+  <dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string><HERMES_HOME>/var/log/autoreply.log</string>
+  <key>StandardErrorPath</key><string><HERMES_HOME>/var/log/autoreply.err.log</string>
+</dict>
+</plist>
