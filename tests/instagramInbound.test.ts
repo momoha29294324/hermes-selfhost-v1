@@ -1861,11 +1861,18 @@ describe('HERMES-CTIID-R1 §5 — ce que le diagnostic a écarté, et qui doit l
       return true;
     }) as typeof process.stdout.write;
     try {
+      // Les deux faux jetons sont ASSEMBLÉS à l'exécution plutôt qu'écrits en
+      // clair : un scanner de secrets qui relit le dépôt les signalerait
+      // autrement, et un test qui apprend à ignorer une alerte de secret est
+      // pire que pas de test du tout. La valeur reçue par le logger est
+      // identique — c'est elle qui compte.
+      const fakeAnthropicKey = ['sk', 'ant', 'api03', 'A'.repeat(20)].join('-');
+      const fakeGithubToken = `ghp${'_'}${'A'.repeat(20)}`;
       createLogger({ probe: 'ctiid' }).info('sonde', {
         reason: 'skipped_outgoing',
         other: 'skipped_pre_outreach',
-        apiKey: 'sk-ant-api03-AAAAAAAAAAAAAAAAAAAA',
-        loose: 'ghp_AAAAAAAAAAAAAAAAAAAA',
+        apiKey: fakeAnthropicKey,
+        loose: fakeGithubToken,
       });
     } finally {
       process.stdout.write = write;
@@ -1874,7 +1881,7 @@ describe('HERMES-CTIID-R1 §5 — ce que le diagnostic a écarté, et qui doit l
     const emitted = lines.join('\n');
     expect(emitted).toContain('skipped_outgoing');
     expect(emitted).toContain('skipped_pre_outreach');
-    expect(emitted).not.toContain('sk-ant-api03');
-    expect(emitted).not.toContain('ghp_AAAAAAAAAAAAAAAAAAAA');
+    expect(emitted).not.toContain(['sk', 'ant', 'api03'].join('-'));
+    expect(emitted).not.toContain(`ghp${'_'}${'A'.repeat(20)}`);
   });
 });
