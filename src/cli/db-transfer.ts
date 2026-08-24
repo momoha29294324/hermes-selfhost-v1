@@ -37,7 +37,7 @@ import { logger } from '@/lib/logging/logger';
  *
  * Le checksum par table couvre déjà ces lignes, mais il les couvre de façon
  * anonyme : il dit « quelque chose a changé », pas « l'envoi réel de
- * Cleanyourcar69 a changé ». Cette sonde nomme ce qui doit survivre au
+ * Demo Prospect B a changé ». Cette sonde nomme ce qui doit survivre au
  * transfert, pour que le rapport puisse l'affirmer plutôt que le supposer.
  */
 async function pilotFingerprint(sql: Sql): Promise<string> {

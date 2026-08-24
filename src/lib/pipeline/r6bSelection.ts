@@ -18,54 +18,29 @@ export const BATCH_SLUG = 'r6b-assisted-pilot-001';
 export const CAMPAIGN_SLUG = 'example-campaign';
 
 /**
- * Les cinq prospects dont le gold set R6A officiel (`src/lib/pipeline/goldSet.ts`)
- * cite déjà le message mot pour mot. Exclus explicitement de R6B-A : leur
- * texte est déjà celui que un opérateur a écrit/approuvé pour construire la voix
- * de production elle-même, et deux d'entre eux portent
- * même un vote humain enregistré (`r6a3_review_items`/`r6a4_review_items`).
- * Les réutiliser comme « premier vrai batch » serait circulaire.
+ * Des prospects EXCLUS du lot par défaut, par identifiant.
+ *
+ * Vide dans cette édition, et c'est le bon défaut : une liste d'exclusion est
+ * faite d'identifiants d'une base précise, elle ne veut rien dire ailleurs, et
+ * elle nomme des entreprises réelles. Un opérateur qui a de bonnes raisons
+ * d'écarter certaines fiches les inscrit ici, dans SA copie.
  */
-export const GOLD_SET_PROSPECT_IDS: readonly string[] = [
-  'a906a564-a705-4ff2-af3d-a5acae937934', // SARL RPA
-  'd25f9037-713b-4ffa-a1e9-5f87b93dca1d', // KAPITALCAR'E
-  '1e572e04-2871-4c70-a441-f40f9036174e', // DEMOJULIET
-  '8ead2db9-3901-469b-9346-2a983566fa9c', // RAISE ATELIER CAR
-  'cb240888-f269-49be-a5dd-e929468ce353', // Car Protect Annecy
-];
+export const GOLD_SET_PROSPECT_IDS: readonly string[] = [];
 
 export interface R6bSelectionEntry {
   id: string;
   reason: string;
 }
 
-/** §5–§6 de la mission : sélection à la main, raison courte par prospect. */
-export const SELECTED: readonly R6bSelectionEntry[] = [
-  {
-    id: 'd5cddd2d-fdcb-4808-b378-51dd6e7cf7c1', // DEMO PROSPECT A — Aubagne
-    reason:
-      'prestation standard écologique sans eau + intervention à domicile, identité en manual_review mais SIREN/adresse publiés, score 74/A, tarifs précis affichés — cœur de cible prestation standard/atelier',
-  },
-  {
-    id: 'a990d98c-2503-4297-b3d8-6da9a6204ca9', // VTC LYONNAIS 69800 (site "Prestation Auto Lyon") — Bron
-    reason:
-      'prestation/vente de produits/rénovation d’optiques, identité confirmée (SIREN publié), aucune dominante REVENTE/revente — diversifie le batch',
-  },
-  {
-    id: 'fb36152e-bf78-4e87-ad19-3a693eafbcac', // Cleanyourcar69
-    reason:
-      'prestation standard intérieur à domicile pur, deux formules à prix affichés (50€/80€), aucune mention REVENTE/revente',
-  },
-  {
-    id: 'fda45003-b959-4677-aa8a-c8798c3325d5', // DEMO FOXTROT — Vaugneray
-    reason:
-      'atelier haut de gamme (vente de produits multi-étapes, boutique en ligne), identité confirmée, tarifs précis jusqu’à 1800€ — un seul prospect à dominante premium/REVENTE dans le lot',
-  },
-  {
-    id: 'dbf3c25d-5b6d-4b36-9eb4-50623630f203', // EXAMPLE SERVICES — Chalamont
-    reason:
-      'centre de atelier (prestation standard intérieur, vente de produits, boutique en ligne, REVENTE en options), identité en manual_review, zone Lyon/Bourg-en-Bresse/Annecy — complète le lot sans le faire basculer côté REVENTE/revente',
-  },
-];
+/**
+ * Une sélection MANUELLE de prospects, par identifiant, avec sa raison.
+ *
+ * Vide dans cette édition. Les identifiants d'une autre base ne désignent rien
+ * ici, et les inscrire reviendrait à livrer la liste de prospects de quelqu'un
+ * d'autre. Un opérateur qui veut un lot choisi à la main écrit le sien ; sans
+ * cela, la sélection se fait par la requête du lot, pas par une liste gelée.
+ */
+export const SELECTED: readonly R6bSelectionEntry[] = [];
 
 export interface RawResearchRow {
   id: string;

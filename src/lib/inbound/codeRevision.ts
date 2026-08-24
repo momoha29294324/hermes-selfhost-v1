@@ -13,7 +13,7 @@
  * les conclusions canoniques rendues par un processus à jour.
  *
  * C'est arrivé le 23 août 2026 sur le message
- * f56eab97-3306-4018-90b8-773c00d85f16.
+ * 00000000-0000-4000-8000-000000000013.
  *
  * ---------------------------------------------------------------------------
  * Ce que ce module fait, et surtout ce qu'il NE fait PAS

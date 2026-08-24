@@ -55,14 +55,21 @@ import {
  */
 
 /**
- * L'unique manifeste que cette mission autorise en LIVE : le premier email
- * commercial de Hermes, verrouillé et complété par un opérateur (transport email,
- * objet approuvé, texte approuvé mot pour mot).
+ * Le SEUL manifeste que cette instance a le droit de remettre en LIVE.
  *
- * Volontairement en dur. Une garde qu'un `UPDATE` ou un `.env` peut déplacer
- * n'est pas une garde ; celle-ci se déplace par un diff.
+ * **Vide dans cette édition, et donc rien n'est armé.** Une chaîne vide n'est
+ * pas un oubli : c'est l'état de repos, et le gate ci-dessous refuse tout tant
+ * qu'elle le reste.
+ *
+ * Volontairement une CONSTANTE, et pas une variable d'environnement. Une garde
+ * qu'un `.env` ou un `UPDATE` peut déplacer n'est pas une garde. Armer un envoi
+ * réel demande donc un DIFF — quelque chose qu'un humain écrit, relit et data.
+ * La variable d'environnement existe aussi, et les deux doivent concorder : la
+ * constante dit « ce manifeste-ci est arment-able », la variable dit « et je
+ * l'arme maintenant ». Il en faut deux parce qu'elles répondent à deux
+ * questions différentes.
  */
-export const R6B_LIVE_ARMED_MANIFEST_ID = 'a4f2f9d5-785c-4a91-8326-2828e77bf942';
+export const R6B_LIVE_ARMED_MANIFEST_ID = '';
 
 /** Le seul transport doté d'un adapter LIVE dans cette mission. */
 export const R6B_LIVE_ARMED_TRANSPORT: Transport = 'email';
@@ -81,6 +88,15 @@ export interface LiveGateInput {
   readonly envManifestId: string | undefined;
   /** Ce que la ligne de commande a demandé, verbatim. */
   readonly requestedManifestId: string;
+  /**
+   * La cible de comparaison — `R6B_LIVE_ARMED_MANIFEST_ID` par défaut.
+   *
+   * Existe pour que la SUITE DE TESTS puisse exercer le chemin armé sans qu'un
+   * manifeste réel soit arme dans le dépôt livré. Aucun module de production ne
+   * la passe, et un test lit les sources pour l'exiger : la production compare
+   * donc toujours à la constante, qui est vide, et refuse.
+   */
+  readonly armedManifestId?: string;
 }
 
 export type LiveGateVerdict =
@@ -102,8 +118,18 @@ export function evaluateLiveGate(input: LiveGateInput): LiveGateVerdict {
       reason: 'OUTBOUND_ALLOW_SENDING n’est pas à 1 — l’envoi reste interdit par l’invariant du dépôt',
     };
   }
+  const armedTarget = input.armedManifestId ?? R6B_LIVE_ARMED_MANIFEST_ID;
+  if (armedTarget.length === 0) {
+    return {
+      armed: false,
+      code: 'LIVE_MANIFEST_NOT_ARMED',
+      reason:
+        'aucun manifeste n’est armé dans ce dépôt (R6B_LIVE_ARMED_MANIFEST_ID est vide) — ' +
+        'armer un envoi réel demande un diff relu, pas une variable d’environnement',
+    };
+  }
   const armedFromEnv = (input.envManifestId ?? '').trim();
-  if (armedFromEnv !== R6B_LIVE_ARMED_MANIFEST_ID) {
+  if (armedFromEnv !== armedTarget) {
     return {
       armed: false,
       code: 'LIVE_MANIFEST_NOT_ARMED',
@@ -113,7 +139,7 @@ export function evaluateLiveGate(input: LiveGateInput): LiveGateVerdict {
           : `OUTBOUND_LIVE_MANIFEST_ID désigne ${armedFromEnv}, qui n’est pas le manifeste armé de cette mission`,
     };
   }
-  if (input.requestedManifestId.trim() !== R6B_LIVE_ARMED_MANIFEST_ID) {
+  if (input.requestedManifestId.trim() !== armedTarget) {
     return {
       armed: false,
       code: 'LIVE_MANIFEST_MISMATCH',
@@ -456,6 +482,12 @@ async function blockedBeforeNetwork(
 export interface LiveEnvironment {
   readonly allowSending: boolean;
   readonly liveManifestId: string | undefined;
+  /**
+   * Cible de comparaison de test — voir `LiveGateInput.armedManifestId`. Aucun
+   * module de production ne la renseigne, et un test lit les sources pour
+   * l'exiger.
+   */
+  readonly armedManifestId?: string;
 }
 
 /**
@@ -480,6 +512,7 @@ export async function dispatchManifestLive(
     allowSending: environment.allowSending,
     envManifestId: environment.liveManifestId,
     requestedManifestId: requested,
+    ...(environment.armedManifestId === undefined ? {} : { armedManifestId: environment.armedManifestId }),
   });
   if (!gate.armed) {
     throw await blockedBeforeNetwork(sql, requested, null, gate.code, gate.reason);
@@ -875,9 +908,10 @@ export async function reconcileLiveAttempt(
   sql: Sql,
   requestedManifestId: string,
   deps: ReconcileDeps,
+  armedManifestId: string = R6B_LIVE_ARMED_MANIFEST_ID,
 ): Promise<ReconcileResult> {
   const requested = String(requestedManifestId ?? '').trim();
-  if (requested !== R6B_LIVE_ARMED_MANIFEST_ID) {
+  if (armedManifestId.length === 0 || requested !== armedManifestId) {
     throw new DispatchBlockedError(
       'LIVE_MANIFEST_MISMATCH',
       `réconciliation refusée : ${requested} n'est pas le manifeste armé de cette mission`,

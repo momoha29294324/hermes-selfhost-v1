@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -60,9 +60,21 @@ const IDENTITY: SenderIdentity = Object.freeze({
   replyTo: 'reponse@example.com',
 });
 
+/**
+ * La cible ARMÉE, pour les tests seulement.
+ *
+ * Le dépôt livré n'arme aucun manifeste (`R6B_LIVE_ARMED_MANIFEST_ID === ''`),
+ * ce qui est le bon défaut mais rendrait le chemin armé inexerçable. Cette
+ * constante l'ouvre pour la suite, et pour elle seule : aucun module de
+ * production ne passe `armedManifestId`, ce qu'un test ci-dessous vérifie en
+ * relisant les sources.
+ */
+const TEST_ARMED_MANIFEST_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
 const ARMED_ENVIRONMENT: LiveEnvironment = Object.freeze({
   allowSending: true,
-  liveManifestId: R6B_LIVE_ARMED_MANIFEST_ID,
+  liveManifestId: TEST_ARMED_MANIFEST_ID,
+  armedManifestId: TEST_ARMED_MANIFEST_ID,
 });
 
 let sql: Sql;
@@ -152,9 +164,9 @@ async function armedManifest(): Promise<DispatchManifest> {
     previewedTransportPayloadSha256: hashSubject(SUBJECT),
   });
 
-  await reidentify(completed.locked.id, R6B_LIVE_ARMED_MANIFEST_ID);
+  await reidentify(completed.locked.id, TEST_ARMED_MANIFEST_ID);
 
-  const manifest = await loadManifestById(sql, R6B_LIVE_ARMED_MANIFEST_ID);
+  const manifest = await loadManifestById(sql, TEST_ARMED_MANIFEST_ID);
   expect(manifest, 'le manifeste armé doit exister après ré-identification').not.toBeNull();
   return manifest!;
 }
@@ -262,16 +274,59 @@ async function waitFor(predicate: () => boolean, label: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 describe('triple garde — quatre conditions simultanées, aucune facultative', () => {
-  it('le manifeste armé est celui de la mission, en dur dans le code', () => {
-    expect(R6B_LIVE_ARMED_MANIFEST_ID).toBe('a4f2f9d5-785c-4a91-8326-2828e77bf942');
+  it('AUCUN module de production ne passe la cible armée de test', () => {
+    // `armedManifestId` existe pour que cette suite puisse exercer le chemin
+    // armé alors que le dépôt n'arme rien. C'est une porte dérobée acceptable
+    // à une condition : que la production ne l'emprunte jamais. Ce test la
+    // vérifie en relisant les sources plutôt qu'en faisant confiance.
+    const root = resolve(__dirname, '..', 'src');
+    const offenders: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const child = join(dir, entry.name);
+        if (entry.isDirectory()) { walk(child); continue; }
+        if (!entry.name.endsWith('.ts')) continue;
+        const source = readFileSync(child, 'utf8');
+        // La DÉCLARATION du champ est légitime ; le PASSER ne l'est pas.
+        if (/armedManifestId\s*:/u.test(source) && !child.endsWith('r6bLiveDispatch.ts')) {
+          offenders.push(child);
+        }
+      }
+    };
+    walk(root);
+    expect(offenders).toEqual([]);
+  });
+
+  it('cette édition ne livre AUCUN manifeste armé', () => {
+    // L'état de repos, et il est opposable : tant que cette constante est
+    // vide, aucune combinaison de mode, de variable d'environnement et
+    // d'argument ne peut armer un envoi. Armer demande un diff relu.
+    expect(R6B_LIVE_ARMED_MANIFEST_ID).toBe('');
     expect(R6B_LIVE_ARMED_TRANSPORT).toBe('email');
+  });
+
+  it('rien n’est armable tant que la constante est vide — quoi qu’on passe', () => {
+    for (const envManifestId of [undefined, '', '00000000-0000-4000-8000-000000000012']) {
+      for (const requestedManifestId of ['', '00000000-0000-4000-8000-000000000012']) {
+        const verdict = evaluateLiveGate({
+          mode: 'LIVE',
+          allowSending: true,
+          envManifestId,
+          requestedManifestId,
+        });
+        expect(verdict, `${String(envManifestId)}/${requestedManifestId}`).toEqual(
+          expect.objectContaining({ armed: false, code: 'LIVE_MANIFEST_NOT_ARMED' }),
+        );
+      }
+    }
   });
 
   const armed = {
     mode: 'LIVE',
     allowSending: true,
-    envManifestId: R6B_LIVE_ARMED_MANIFEST_ID,
-    requestedManifestId: R6B_LIVE_ARMED_MANIFEST_ID,
+    envManifestId: TEST_ARMED_MANIFEST_ID,
+    requestedManifestId: TEST_ARMED_MANIFEST_ID,
+    armedManifestId: TEST_ARMED_MANIFEST_ID,
   } as const;
 
   it('n’arme que si les quatre concordent', () => {
@@ -292,7 +347,7 @@ describe('triple garde — quatre conditions simultanées, aucune facultative', 
   });
 
   it('refuse si OUTBOUND_LIVE_MANIFEST_ID est absent ou désigne autre chose', () => {
-    for (const envManifestId of [undefined, '', '   ', '5a8e5969-5436-4007-9b43-60e879e83698']) {
+    for (const envManifestId of [undefined, '', '   ', '00000000-0000-4000-8000-000000000011']) {
       const verdict = evaluateLiveGate({ ...armed, envManifestId });
       expect(verdict, String(envManifestId)).toEqual(
         expect.objectContaining({ armed: false, code: 'LIVE_MANIFEST_NOT_ARMED' }),
@@ -302,7 +357,7 @@ describe('triple garde — quatre conditions simultanées, aucune facultative', 
 
   it('refuse si la ligne de commande ne demande pas exactement le manifeste armé', () => {
     for (const requestedManifestId of [
-      '5a8e5969-5436-4007-9b43-60e879e83698',
+      '00000000-0000-4000-8000-000000000011',
       '00000000-0000-0000-0000-000000000000',
       `${R6B_LIVE_ARMED_MANIFEST_ID}x`,
       '',
@@ -319,9 +374,9 @@ describe('triple garde — quatre conditions simultanées, aucune facultative', 
     const provider = new FakeProvider();
 
     for (const environment of [
-      { allowSending: false, liveManifestId: R6B_LIVE_ARMED_MANIFEST_ID },
-      { allowSending: true, liveManifestId: undefined },
-      { allowSending: true, liveManifestId: '5a8e5969-5436-4007-9b43-60e879e83698' },
+      { allowSending: false, liveManifestId: TEST_ARMED_MANIFEST_ID, armedManifestId: TEST_ARMED_MANIFEST_ID },
+      { allowSending: true, liveManifestId: undefined, armedManifestId: TEST_ARMED_MANIFEST_ID },
+      { allowSending: true, liveManifestId: '00000000-0000-4000-8000-000000000011', armedManifestId: TEST_ARMED_MANIFEST_ID },
     ] satisfies LiveEnvironment[]) {
       await expect(
         dispatchManifestLive(sql, R6B_LIVE_ARMED_MANIFEST_ID, deps(provider), environment),
@@ -350,6 +405,7 @@ describe('triple garde — quatre conditions simultanées, aucune facultative', 
       dispatchManifestLive(sql, '11111111-2222-3333-4444-555555555555', deps(provider), {
         allowSending: true,
         liveManifestId: '11111111-2222-3333-4444-555555555555',
+        armedManifestId: TEST_ARMED_MANIFEST_ID,
       }),
       'LIVE_MANIFEST_NOT_ARMED',
     );
@@ -452,9 +508,9 @@ describe('payload — exactement ce que le manifeste porte, rien de plus', () =>
 
 describe('idempotence — clé déterministe dérivée du seul manifeste', () => {
   it('est stable, propre au manifeste et au format documenté', () => {
-    const key = deriveIdempotencyKey(R6B_LIVE_ARMED_MANIFEST_ID);
-    expect(key).toBe(deriveIdempotencyKey(R6B_LIVE_ARMED_MANIFEST_ID));
-    expect(key).toContain(R6B_LIVE_ARMED_MANIFEST_ID);
+    const key = deriveIdempotencyKey(TEST_ARMED_MANIFEST_ID);
+    expect(key).toBe(deriveIdempotencyKey(TEST_ARMED_MANIFEST_ID));
+    expect(key).toContain(TEST_ARMED_MANIFEST_ID);
     expect(key).not.toBe(deriveIdempotencyKey('00000000-0000-0000-0000-000000000000'));
     expect(key.length).toBeGreaterThanOrEqual(1);
     expect(key.length).toBeLessThanOrEqual(256);
@@ -884,7 +940,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
   it('refuse un manifeste qui n’est pas l’armé', async () => {
     await armedManifest();
     await expectBlocked(
-      reconcileLiveAttempt(sql, '00000000-0000-0000-0000-000000000000', reconcileDeps(new FakeProvider())),
+      reconcileLiveAttempt(sql, '00000000-0000-0000-0000-000000000000', reconcileDeps(new FakeProvider()), TEST_ARMED_MANIFEST_ID),
       'LIVE_MANIFEST_MISMATCH',
     );
   });
@@ -892,7 +948,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
   it('ne fait rien, et n’interroge personne, quand il n’y a rien à trancher', async () => {
     const manifest = await armedManifest();
     const provider = new FakeProvider();
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
     expect(result.status).toBe('NOTHING_TO_RECONCILE');
     expect(result.providerQueried).toBe(false);
     expect(provider.listCalls).toBe(0);
@@ -913,8 +969,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('ALREADY_SENT');
     expect(provider.sendCalls).toHaveLength(0);
@@ -934,8 +989,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('CONFIRMED_SENT');
     expect(result.providerReplayed).toBe(true);
@@ -963,7 +1017,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     await dispatchManifestLive(sql, manifest.id, deps(first), ARMED_ENVIRONMENT);
 
     const replay = new FakeProvider({ outcome: { status: 'SENT', providerMessageId: 'msg-idem' } });
-    await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(replay, { allowIdempotentReplay: true }));
+    await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(replay, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
 
     expect(replay.sendCalls[0]!.request).toEqual(first.sendCalls[0]!.request);
     expect(hashProviderPayload(replay.sendCalls[0]!.request)).toBe(hashProviderPayload(first.sendCalls[0]!.request));
@@ -1000,8 +1054,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('NOTHING_TO_RECONCILE');
     expect(provider.sendCalls).toHaveLength(0);
@@ -1012,7 +1065,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const manifest = await ambiguousAttempt();
     const provider = new FakeProvider({ outcome: { status: 'SENT', providerMessageId: 'msg-jamais' } });
 
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('UNRESOLVED');
     expect(result.providerReplayed).toBe(false);
@@ -1037,8 +1090,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
         reconcileDeps(provider, {
           allowIdempotentReplay: true,
           senderIdentity: { from: 'Autre <autre@example.com>', replyTo: IDENTITY.replyTo },
-        }),
-      ),
+        }), TEST_ARMED_MANIFEST_ID),
       'LIVE_PROVIDER_PAYLOAD_DRIFT',
     );
 
@@ -1059,8 +1111,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
         reconcileDeps(provider, {
           allowIdempotentReplay: true,
           senderIdentity: { from: IDENTITY.from, replyTo: 'autre-reponse@example.com' },
-        }),
-      ),
+        }), TEST_ARMED_MANIFEST_ID),
       'LIVE_PROVIDER_PAYLOAD_DRIFT',
     );
     expect(provider.sendCalls).toHaveLength(0);
@@ -1076,7 +1127,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
 
     const provider = new FakeProvider({ outcome: { status: 'SENT', providerMessageId: 'msg-x' } });
     await expectBlocked(
-      reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider, { allowIdempotentReplay: true })),
+      reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID),
       'LIVE_IDEMPOTENCY_KEY_DRIFT',
     );
 
@@ -1098,8 +1149,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
       manifest.id,
       // Même explicitement autorisé, le rejeu n'a pas lieu : la clé n'est
       // plus honorée par le provider, donc ce ne serait plus un rejeu.
-      reconcileDeps(provider, { allowIdempotentReplay: true }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('REQUIRES_HUMAN_RECONCILIATION');
     expect(result.withinIdempotencyWindow).toBe(false);
@@ -1132,8 +1182,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(again, { allowIdempotentReplay: true }),
-    );
+      reconcileDeps(again, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID);
     expect(result.status).toBe('ALREADY_SENT');
     expect(again.sendCalls).toHaveLength(0);
     expect(await counts()).toEqual({ outreach: 1, sent: 1, network: 1, live: 1 });
@@ -1154,8 +1203,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }), TEST_ARMED_MANIFEST_ID);
 
     // Borné : exactement le plafond, jamais une boucle.
     expect(provider.sendCalls).toHaveLength(3);
@@ -1181,8 +1229,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }), TEST_ARMED_MANIFEST_ID);
 
     expect(provider.sendCalls).toHaveLength(2);
     expect(result.status).toBe('CONFIRMED_SENT');
@@ -1200,8 +1247,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 3 }), TEST_ARMED_MANIFEST_ID);
 
     // Un seul appel : ce conflit-là ne se résout pas en attendant.
     expect(provider.sendCalls).toHaveLength(1);
@@ -1217,8 +1263,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const result = await reconcileLiveAttempt(
       sql,
       manifest.id,
-      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 5 }),
-    );
+      reconcileDeps(provider, { allowIdempotentReplay: true, maxReplayAttempts: 5 }), TEST_ARMED_MANIFEST_ID);
 
     // Une seule requête malgré un plafond à 5 : seul le 409 concurrent, que
     // Resend dit explicitement sûr à retenter, autorise une seconde requête.
@@ -1242,7 +1287,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     const provider = new FakeProvider({
       records: [{ id: 'msg-connu', ...RECORD_BASE, createdAt: new Date().toISOString() }],
     });
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('CONFIRMED_SENT');
     expect(result.providerMessageId).toBe('msg-connu');
@@ -1260,7 +1305,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
     ]);
 
     const provider = new FakeProvider({ records: [] });
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('REQUIRES_HUMAN_RECONCILIATION');
     expect(result.detail).toMatch(/ne prouve pas qu’aucun email n’est parti/);
@@ -1274,7 +1319,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
       records: [{ id: 'msg-ressemblant', ...RECORD_BASE, createdAt: new Date(Date.now() + 1000).toISOString() }],
     });
 
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     // Il est signalé comme piste, jamais retenu comme preuve.
     expect(result.status).not.toBe('CONFIRMED_SENT');
@@ -1302,7 +1347,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
         { id: 'b', ...RECORD_BASE, createdAt },
       ],
     });
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('REQUIRES_HUMAN_RECONCILIATION');
     expect(result.diagnosticCandidates).toEqual(['a', 'b']);
@@ -1312,7 +1357,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
   it('ne conclut jamais « rien n’est parti » : sans preuve, l’issue reste bloquante', async () => {
     const manifest = await ambiguousAttempt();
     const provider = new FakeProvider({ records: [] });
-    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider));
+    const result = await reconcileLiveAttempt(sql, manifest.id, reconcileDeps(provider), TEST_ARMED_MANIFEST_ID);
 
     expect(result.status).toBe('UNRESOLVED');
     expect(result.detail).toMatch(/ne prouve rien/);
@@ -1339,8 +1384,7 @@ describe('réconciliation — rejeu à l’identique, et jamais de conclusion no
       reconcileLiveAttempt(
         sql,
         '11111111-2222-3333-4444-555555555555',
-        reconcileDeps(provider, { allowIdempotentReplay: true }),
-      ),
+        reconcileDeps(provider, { allowIdempotentReplay: true }), TEST_ARMED_MANIFEST_ID),
       'LIVE_MANIFEST_MISMATCH',
     );
     expect(provider.sendCalls).toHaveLength(0);

@@ -117,7 +117,7 @@ import type { OutreachState, ProcessableCorrelation, ReplyCategory } from '@/lib
  * (§ tests `conversationNaturalness.test.ts`), et aucune autre porte n'est
  * touchée. L'incrément referme malgré tout les décisions rendues sous r10, y
  * compris celles qui refusaient — c'est la seule façon de rejuger le tour du
- * 23 août 2026 (plan `3086e93d-af09-4c26-b279-4ca92124ce29`, `CANCELLED`, sans
+ * 23 août 2026 (plan `00000000-0000-4000-8000-000000000004`, `CANCELLED`, sans
  * effet tenté) sans le ressusciter : `recordConversationPlan` inscrit le tour
  * rejugé À CÔTÉ, sur une clé d'idempotence neuve.
  */

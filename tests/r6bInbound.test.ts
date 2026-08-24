@@ -1184,9 +1184,10 @@ describe('non-régression outbound', () => {
   });
 
   it('la garde d’envoi outbound est intacte', async () => {
-    // Les constantes de la triple garde n'ont pas bougé, et le drapeau
-    // d'envoi reste à zéro dans l'environnement de test.
-    expect(R6B_LIVE_ARMED_MANIFEST_ID).toBe('a4f2f9d5-785c-4a91-8326-2828e77bf942');
+    // Rien n'est armé dans le dépôt livré, et le drapeau d'envoi reste à zéro
+    // dans l'environnement de test. La relève entrante ne change ni l'un ni
+    // l'autre — c'est exactement ce que ce test existe pour dire.
+    expect(R6B_LIVE_ARMED_MANIFEST_ID).toBe('');
     expect(process.env['OUTBOUND_ALLOW_SENDING'] ?? '0').toBe('0');
   });
 

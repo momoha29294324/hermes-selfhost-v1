@@ -119,8 +119,8 @@ alter table r6b_dispatch_attempts add constraint r6b_dispatch_attempt_ready_has_
 -- 3. Ce que cette migration ne fait pas
 -- ---------------------------------------------------------------------------
 --
--- Elle ne complète aucun manifeste. Le manifeste email de Cleanyourcar69
--- (5a8e5969-5436-4007-9b43-60e879e83698) reste LOCKED, sans objet, donc
+-- Elle ne complète aucun manifeste. Le manifeste email de Demo Prospect B
+-- (00000000-0000-4000-8000-000000000002) reste LOCKED, sans objet, donc
 -- explicitement non prêt pour un LIVE (`missingForLive = ['subject']`). Son
 -- objet doit être saisi par un opérateur dans `/pilot/r6b-dispatch` ; le
 -- remplacement passe alors par un supersede append-only

@@ -559,7 +559,7 @@ describe('canaux — un e-mail déjà envoyé n’interdit pas un premier DM', (
   it('le contact e-mail de l’autre ligne est VISIBLE mais ne bloque pas Instagram', async () => {
     const old = await createProspect({
       campaignId: r5CampaignId,
-      displayName: 'Cleanyourcar69',
+      displayName: 'Demo Prospect B',
       domain: 'demo-prospect-b.fr',
       email: 'demo-prospect-b@yahoo.com',
     });
@@ -590,7 +590,7 @@ describe('canaux — un e-mail déjà envoyé n’interdit pas un premier DM', (
   it('mais un e-mail déjà envoyé au commerce bloque un SECOND e-mail', async () => {
     const old = await createProspect({
       campaignId: r5CampaignId,
-      displayName: 'Cleanyourcar69',
+      displayName: 'Demo Prospect B',
       domain: 'demo-prospect-b.fr',
       email: 'demo-prospect-b@yahoo.com',
     });

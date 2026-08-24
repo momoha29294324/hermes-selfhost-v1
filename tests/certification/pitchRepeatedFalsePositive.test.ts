@@ -9,7 +9,7 @@
  * prestation à l'époque ? ». Le contrôle de naturalité (`naturalness.ts`)
  * confondait alors une QUESTION contenant le mot « pub » avec une AFFIRMATION
  * réexpliquant l'offre, et bloquait le tour en `PITCH_REPEATED`
- * (plan `3086e93d-af09-4c26-b279-4ca92124ce29`, `CANCELLED`, sans effet
+ * (plan `00000000-0000-4000-8000-000000000010`, `CANCELLED`, sans effet
  * tenté — il reste tel quel, historique, jamais ressuscité par ce fichier).
  *
  * Ce fichier prouve deux choses, ensemble, comme la mission l'exige :

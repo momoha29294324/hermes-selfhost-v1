@@ -453,7 +453,7 @@ describe('étalement fonctionnel', () => {
 
   it('est déterministe et borné quand il est activé', () => {
     const schedule = { ...config.schedule, jitterMs: 60_000 };
-    const key = 'ig-r1/first_touch_dm/7a3e4b3b-a25c-41c5-8cf3-ee8b1bddb465';
+    const key = 'ig-r1/first_touch_dm/00000000-0000-4000-8000-000000000008';
 
     // Déterministe : mille appels, une seule valeur. Ce n'est pas une
     // randomisation anti-détection — la même cible reçoit toujours le même

@@ -245,7 +245,7 @@ describe('état commercial affiché', () => {
     lastReplyAt: null,
   };
 
-  it('un envoi réel sans réponse se dit « contacté, en attente » — le cas Cleanyourcar69', () => {
+  it('un envoi réel sans réponse se dit « contacté, en attente » — le cas Demo Prospect B', () => {
     const state = resolveCommercialState({
       ...base,
       sentCount: 1,
@@ -623,10 +623,10 @@ describe('ordre de la timeline', () => {
 describe('formatage', () => {
   it('les références de preuve sont isolées, jamais supprimées', () => {
     const segments = splitEvidenceRefs(
-      'Deux formules affichées [b52a5f1f-5c23-4bde-9597-94a9a74c3ecd] sur le site.',
+      'Deux formules affichées [00000000-0000-4000-8000-000000000009] sur le site.',
     );
     expect(segments.filter((segment) => segment.isRef).map((segment) => segment.text)).toEqual([
-      'b52a5f1f',
+      '00000000',
     ]);
     expect(segments.map((segment) => segment.text).join('')).toContain('Deux formules affichées');
     expect(segments.map((segment) => segment.text).join('')).toContain('sur le site.');

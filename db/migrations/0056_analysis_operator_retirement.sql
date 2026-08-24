@@ -8,7 +8,7 @@
 -- Le 23 août 2026, un `ig:inbound:run --loop` démarré à 07:00:42Z — donc AVANT
 -- le commit 6d1bf8a de 07:30:51Z — a continué de classifier avec le code chargé
 -- en mémoire à son démarrage. À 08:43:26Z il a écrit, pour le message
--- f56eab97-3306-4018-90b8-773c00d85f16, une analyse portant
+-- 00000000-0000-4000-8000-000000000003, une analyse portant
 -- `prompt_version = 'r6b-d2-classify-1'` — une version qu'aucun code du HEAD ne
 -- produit plus — et, ce faisant, il a fait passer en `SUPERSEDED` l'analyse
 -- CANONIQUE rendue à 08:36:15Z sous `r6b-d2-classify-2`.

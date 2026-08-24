@@ -16,8 +16,8 @@ import { describe, expect, it } from 'vitest';
 
 import { replyStaleness } from '@/lib/conversation/preEffect';
 
-const X = '2655f028-1f4a-4fd9-af7e-25a2baacbb8c';
-const Y = '9d6a1c74-0000-4000-8000-00000000000b';
+const X = '00000000-0000-4000-8000-000000000006';
+const Y = '00000000-0000-4000-8000-000000000005';
 
 describe('replyStaleness — le déclencheur ne se bloque pas lui-même', () => {
   it('A — le dernier entrant EST le déclencheur du plan : pas périmé', () => {

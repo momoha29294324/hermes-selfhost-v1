@@ -6,7 +6,7 @@
 -- cas le PLUS FRÉQUENT d'une prospection qui fonctionne : le prospect répond à
 -- la question qu'on vient de lui poser, en livrant un fait sur son entreprise.
 --
--- Observé le 22 août 2026, message 265d790b-093d-4af6-b927-4213a55028ac :
+-- Observé le 22 août 2026, message 00000000-0000-4000-8000-000000000000 :
 --
 --   NOUS : « … vous faites comment pour avoir régulièrement de nouvelles
 --            demandes, plutôt grâce au bouche-à-oreille et aux réseaux ou avec

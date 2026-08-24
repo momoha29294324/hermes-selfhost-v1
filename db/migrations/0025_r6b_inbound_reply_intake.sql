@@ -32,7 +32,7 @@
 -- Vérifié dans la documentation Resend le 2026-08-13, pas supposé : la
 -- réponse de `GET /emails/{id}` porte deux champs distincts —
 --
---   * `id`         : `4ef9a417-02e9-4d39-ad75-9611e0fcc33c` (identifiant
+--   * `id`         : `00000000-0000-4000-8000-000000000001` (identifiant
 --                    interne Resend, celui que le dépôt stocke déjà) ;
 --   * `message_id` : `<111-222-333@email.example.com>` (l'en-tête RFC 5322
 --                    réellement présent dans l'email).

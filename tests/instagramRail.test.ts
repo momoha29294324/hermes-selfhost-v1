@@ -567,10 +567,10 @@ describe('vérification d’identité', () => {
 
 describe('clé d’idempotence', () => {
   it('est déterministe, sans horloge ni aléa', () => {
-    const a = deriveInstagramIdempotencyKey('3b14fcc8-9268-44a5-b77d-4f13dc000826', 'first_touch_dm');
-    const b = deriveInstagramIdempotencyKey('3b14fcc8-9268-44a5-b77d-4f13dc000826', 'first_touch_dm');
+    const a = deriveInstagramIdempotencyKey('00000000-0000-4000-8000-000000000007', 'first_touch_dm');
+    const b = deriveInstagramIdempotencyKey('00000000-0000-4000-8000-000000000007', 'first_touch_dm');
     expect(a).toBe(b);
-    expect(a).toBe('ig-r1/first_touch_dm/3b14fcc8-9268-44a5-b77d-4f13dc000826');
+    expect(a).toBe('ig-r1/first_touch_dm/00000000-0000-4000-8000-000000000007');
   });
 
   it('sépare deux manifestes', () => {
