@@ -1,0 +1,8 @@
+{
+  "_comment": "COPIEZ ce fichier vers config/operator.json et remplissez-le avec VOS informations. Tant que config/operator.json n'existe pas, l'identité de l'opérateur vaut UNCONFIGURED et aucun premier message ne peut être généré. Aucune valeur ci-dessous n'est un défaut utilisable : ce sont des emplacements.",
+  "operatorName": "Votre nom",
+  "senderDescription": "Décrivez en une phrase ce que VOTRE entreprise fait, du point de vue de celui qui reçoit le message.",
+  "audienceDescription": "Décrivez en une phrase À QUI vous écrivez : quel métier, quelle taille, quelle situation.",
+  "vertical": "le-metier-que-vous-prospectez",
+  "voiceExamples": []
+}

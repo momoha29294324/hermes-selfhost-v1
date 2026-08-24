@@ -1,0 +1,30 @@
+{
+  "_comment": "COPIEZ vers config/offer.json et remplissez avec VOS conditions. Tant que config/offer.json n'existe pas, aucune vérité commerciale n'est disponible et TOUTE question de prix, de durée, de périmètre ou de garantie escalade vers un humain — ce qui est le défaut voulu, pas une panne. N'écrivez ici que ce que vous pouvez tenir : ce fichier est ce que Hermes a le droit d'affirmer en votre nom.",
+  "version": "mon-offre-r1",
+  "trial": {
+    "_comment": "Supprimez ce bloc (mettez null) si vous ne proposez aucun essai. Les faits se disent ENSEMBLE : une durée annoncée sans dire qui paie quoi est un mensonge par omission, et une garde le refuse.",
+    "facts": [
+      "il existe un test de N jours",
+      "je ne facture pas mes frais de service pendant ces N jours",
+      "les coûts externes éventuels restent à la charge du client, dès le premier jour",
+      "au terme des N jours, la suite est payante et seulement si le client veut continuer"
+    ],
+    "durationDays": 7,
+    "quotableAmounts": []
+  },
+  "serviceFacts": {
+    "_comment": "Une clé par facette. Une facette absente reste MUETTE et la question escalade. Écrivez des FAITS, jamais des phrases à réciter.",
+    "WHAT_WE_DO": [
+      "décrivez en une ou deux propositions ce que vous mettez concrètement en place"
+    ],
+    "SYSTEM_FLOW": [],
+    "CLIENT_ROLE": [],
+    "DIFFERENTIATION": [],
+    "AD_BUDGET": [],
+    "ASSET_ACCESS": [],
+    "LEAD_QUALIFICATION": [],
+    "RESULT_TIMING": [],
+    "CHANNEL_SCOPE": [],
+    "ONBOARDING": []
+  }
+}
