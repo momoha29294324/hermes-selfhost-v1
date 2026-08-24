@@ -1,0 +1,55 @@
+{
+  "key": "example-icp",
+  "label": "ICP d'EXEMPLE — à remplacer",
+  "version": 1,
+  "description": "Profil de client idéal SYNTHÉTIQUE. Il ne décrit aucun marché réel et n'a été calibré sur rien. Il existe pour donner une forme valide à lire ; construisez le vôtre (voir CLAUDE_SETUP.md, étape ICP).",
+  "thresholds": {
+    "weakSignalsForReview": 3,
+    "strongSourcesForNotTarget": 2,
+    "zonesForNationalReach": 3
+  },
+  "signalGroups": [
+    {
+      "key": "national_chain",
+      "severity": "STRONG",
+      "label": "Enseigne nationale",
+      "why": "Une enseigne nationale n'a pas de décideur local joignable.",
+      "phrases": [
+        "réseau national",
+        "nos 120 agences",
+        "franchise"
+      ]
+    },
+    {
+      "key": "marketplace",
+      "severity": "WEAK",
+      "label": "Place de marché",
+      "why": "Une place de marché revend l'activité d'autres entreprises.",
+      "phrases": [
+        "mettez en relation",
+        "comparateur"
+      ]
+    }
+  ],
+  "exclusions": [
+    "annuaire",
+    "comparateur",
+    "plateforme de mise en relation"
+  ],
+  "nationalScopeHandleMarkers": [
+    "_france",
+    "_officiel",
+    "group"
+  ],
+  "zoneDepartments": {
+    "zone-a": "01",
+    "zone-b": "02",
+    "zone-c": "03"
+  },
+  "genericDomainTokens": [
+    "contact",
+    "info",
+    "services",
+    "pro"
+  ]
+}

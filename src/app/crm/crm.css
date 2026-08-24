@@ -1,0 +1,5286 @@
+/*
+ * CRM Hermes — CRM2, la direction artistique « navy premium ».
+ *
+ * Volontairement séparée de `globals.css` : la revue humaine est un document
+ * (colonne centrée, lecture longue), le CRM est une application (pleine
+ * hauteur, surfaces, balayage). Partager une feuille obligerait chaque règle à
+ * satisfaire les deux, c'est-à-dire aucune des deux.
+ *
+ * ---------------------------------------------------------------------------
+ * Quatre règles ont décidé de tout le reste
+ * ---------------------------------------------------------------------------
+ *
+ *   1. UNE couleur = UNE fonction. Le vert dit « qualifié / positif », le bleu
+ *      « prêt à agir », le violet « canal et activité », l'orange « attention
+ *      ou échéance », le rouge « rejet, erreur, blocage ». Aucune teinte n'est
+ *      décorative : si une couleur n'affirme rien, l'élément reste ardoise.
+ *   2. Un groupe d'information est une CARTE — surface propre, filet discret,
+ *      grand rayon, air intérieur. La hiérarchie passe par la surface et
+ *      l'espacement avant de passer par le poids typographique.
+ *   3. Les teintes sont portées par une variable `--tone`, posée en
+ *      `data-tone` sur n'importe quel élément. Un badge, une pastille, une
+ *      jauge et un avatar partagent donc la même famille de couleur sans
+ *      qu'aucune classe ne la nomme — c'est ce qui garde la palette cohérente
+ *      quand une nouvelle valeur métier apparaît.
+ *   4. Les chiffres sont tabulaires, les identifiants en chasse fixe. Une
+ *      colonne de nombres doit s'aligner à l'œil sans être lue.
+ */
+
+.crm {
+  /* — surfaces ——————————————————————————————————————————————————
+     R3. Les six surfaces de CRM2 tenaient dans quinze points de luminance :
+     mesurée à l'écran, une carte se distinguait à peine du fond, et la page
+     entière lisait « noir ». L'échelle est REDÉPLOYÉE — le fond descend, les
+     surfaces montent — si bien qu'une carte est maintenant visiblement POSÉE
+     sur le fond plutôt que découpée dedans.
+
+     `--crm-sheen` est le second demi de la même idée : un dégradé d'un blanc
+     à 4 % du haut vers le bas, posé sur chaque surface. C'est ce qui fait
+     qu'un panneau a l'air éclairé par le haut au lieu d'être une aplat. */
+  --crm-bg: #090b13;
+  --crm-rail: #0c0f1a;
+  --crm-card: #171d2d;
+  --crm-card-2: #1f2538;
+  --crm-card-3: #283048;
+  --crm-line: #2b3349;
+  --crm-line-strong: #38425c;
+  --crm-sheen: linear-gradient(180deg, rgb(255 255 255 / 4.5%), rgb(255 255 255 / 0%) 62%);
+  --crm-sheen-strong: linear-gradient(180deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 0%) 58%);
+  --crm-lift: 0 1px 0 0 rgb(255 255 255 / 5%) inset;
+
+  /* — texte —————————————————————————————————————————————————————
+     Trois niveaux, tous mesurés sur `--crm-card` (#10151f) :
+       --crm-text    17,1:1   la donnée
+       --crm-text-2   7,4:1   le libellé qui la nomme
+       --crm-text-3   4,6:1   la métadonnée et la provenance
+     Le troisième valait #6a768c, soit 4,0:1 — sous le seuil de 4,5:1 du texte
+     courant. Il est remonté d'un cran : une provenance doit reculer, pas
+     devenir illisible. */
+  --crm-text: #f2f5fc;
+  --crm-text-2: #a7b2c8;
+  --crm-text-3: #7d89a1;
+
+  /* — teintes fonctionnelles —————————————————————————————————
+     Une teinte = un sens, et le sens est écrit dans `view.ts` (`CrmTone`).
+     Le violet ne dit plus QUE la marque, la navigation et la sélection ; le
+     cyan a repris ce qu'il disait du travail en cours et de la machine. */
+  --crm-violet: #a78bfa;
+  --crm-violet-strong: #7c5cf6;
+  --crm-green: #34d399;
+  --crm-blue: #60a5fa;
+  --crm-cyan: #4dd0e1;
+  --crm-orange: #fbbf24;
+  --crm-red: #f87171;
+  --crm-rose: #f472b6;
+  --crm-slate: #8494ae;
+
+  /* — rayons et ombres ————————————————————————————————————————— */
+  --crm-r-xl: 22px;
+  --crm-r-lg: 18px;
+  --crm-r-md: 14px;
+  --crm-r-sm: 10px;
+  --crm-shadow: 0 1px 2px rgb(0 0 0 / 45%), 0 18px 40px -26px rgb(0 0 0 / 85%);
+  --crm-shadow-lift: 0 2px 4px rgb(0 0 0 / 35%), 0 22px 46px -24px rgb(0 0 0 / 90%);
+  --crm-violet-glow: 0 0 0 1px rgb(124 92 246 / 40%), 0 10px 30px -14px rgb(124 92 246 / 55%);
+
+  --crm-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Teinte par défaut : ardoise. `var(--tone)` résout donc toujours, même sur
+     un élément qui ne porte aucun `data-tone`. */
+  --tone: var(--crm-slate);
+  --tone-strong: #64748b;
+  --tone-soft: rgb(132 148 174 / 12%);
+  --tone-line: rgb(132 148 174 / 26%);
+
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  /* Trois sources de lumière plutôt qu'une. Une seule tache violette en haut
+     à droite laissait les trois autres quarts de l'écran en noir plat ; celle
+     du haut-gauche éclaire l'en-tête, celle du bas-droit empêche le pied de
+     page de tomber dans le vide. Toutes les trois sont à moins de 12 % : ce
+     qui doit se voir, ce sont les surfaces, pas le décor. */
+  background:
+    radial-gradient(1100px 560px at 74% -14%, rgb(124 92 246 / 13%), transparent 64%),
+    radial-gradient(760px 420px at 4% 0%, rgb(77 208 225 / 6%), transparent 60%),
+    radial-gradient(900px 500px at 100% 108%, rgb(124 92 246 / 7%), transparent 62%),
+    var(--crm-bg);
+  color: var(--crm-text);
+  /* 13,5 px était sous la borne basse d'un corps de texte lisible : à cette
+     taille, une donnée et sa métadonnée se ressemblaient. */
+  font-size: 14.5px;
+  line-height: 1.55;
+  overflow: hidden;
+}
+
+/* Les six teintes, une seule fois. Tout le reste de la feuille lit `--tone`. */
+.crm [data-tone='violet'] {
+  --tone: var(--crm-violet);
+  --tone-strong: var(--crm-violet-strong);
+  --tone-soft: rgb(124 92 246 / 16%);
+  --tone-line: rgb(124 92 246 / 34%);
+}
+
+.crm [data-tone='green'] {
+  --tone: var(--crm-green);
+  --tone-strong: #10b981;
+  --tone-soft: rgb(52 211 153 / 13%);
+  --tone-line: rgb(52 211 153 / 28%);
+}
+
+.crm [data-tone='blue'] {
+  --tone: var(--crm-blue);
+  --tone-strong: #3b82f6;
+  --tone-soft: rgb(96 165 250 / 13%);
+  --tone-line: rgb(96 165 250 / 28%);
+}
+
+.crm [data-tone='cyan'] {
+  --tone: var(--crm-cyan);
+  --tone-strong: #26c6da;
+  --tone-soft: rgb(77 208 225 / 13%);
+  --tone-line: rgb(77 208 225 / 28%);
+}
+
+.crm [data-tone='orange'] {
+  --tone: var(--crm-orange);
+  --tone-strong: #f59e0b;
+  --tone-soft: rgb(251 191 36 / 13%);
+  --tone-line: rgb(251 191 36 / 28%);
+}
+
+.crm [data-tone='red'] {
+  --tone: var(--crm-red);
+  --tone-strong: #ef4444;
+  --tone-soft: rgb(248 113 113 / 13%);
+  --tone-line: rgb(248 113 113 / 28%);
+}
+
+.crm [data-tone='rose'] {
+  --tone: var(--crm-rose);
+  --tone-strong: #ec4899;
+  --tone-soft: rgb(244 114 182 / 13%);
+  --tone-line: rgb(244 114 182 / 28%);
+}
+
+.crm [data-tone='slate'] {
+  --tone: var(--crm-slate);
+  --tone-strong: #64748b;
+  --tone-soft: rgb(132 148 174 / 12%);
+  --tone-line: rgb(132 148 174 / 26%);
+}
+
+/*
+ * Remise à zéro des titres.
+ *
+ * `globals.css` habille `h2` pour la revue humaine (12 px, majuscules,
+ * gris pâle) et cette règle gagnerait ici par simple cascade. `:where()`
+ * n'ajoute aucune spécificité : les classes ci-dessous reprennent donc la
+ * main sans avoir à surenchérir en `!important` ni en sélecteurs longs.
+ */
+.crm :where(h1, h2, h3) {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
+}
+
+/* Les attributs constants de toutes les icônes, écrits une fois pour toutes
+   plutôt qu'une fois par occurrence. `stroke-width` est hérité, donc un appel
+   qui règle l'épaisseur au cas par cas la pose sur son propre `<svg>` et
+   l'emporte sans que cette règle ait à céder. */
+.crm-icon {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.crm svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Rail de navigation
+   -------------------------------------------------------------------------- */
+
+.crm-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--crm-rail);
+  border-right: 1px solid var(--crm-line);
+  padding: 18px 14px 14px;
+  overflow-y: auto;
+}
+
+.crm-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 6px 20px;
+}
+
+.crm-rail-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--crm-r-md);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, var(--crm-violet-strong), #4f46e5);
+  box-shadow: 0 6px 16px -8px rgb(124 92 246 / 90%);
+}
+
+.crm-rail-brand b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.crm-rail-brand small {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+  margin-top: 3px;
+}
+
+.crm-rail-group {
+  padding: 16px 8px 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-rail a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--crm-r-md);
+  color: var(--crm-text-2);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.crm-rail a span.l {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-rail a:hover {
+  color: var(--crm-text);
+  background: var(--crm-card);
+}
+
+/*
+ * L'état actif est une SURFACE teintée, pas un filet de deux pixels : c'est la
+ * seule chose de la colonne qu'on doit voir sans la chercher.
+ */
+.crm-rail a.active {
+  color: #fff;
+  background: linear-gradient(120deg, rgb(124 92 246 / 26%), rgb(124 92 246 / 12%));
+  box-shadow: inset 0 0 0 1px rgb(124 92 246 / 34%);
+  font-weight: 600;
+}
+
+.crm-rail a.active svg {
+  color: var(--crm-violet);
+}
+
+.crm-rail a .count {
+  font-family: var(--crm-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text-3);
+  background: var(--crm-card-2);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.crm-rail a.active .count {
+  color: var(--crm-violet);
+  background: rgb(124 92 246 / 18%);
+}
+
+/*
+ * Le pied du rail dit une chose importante — rien ne part d'ici — sans occuper
+ * le poids d'un bloc.
+ */
+.crm-rail-foot {
+  margin-top: auto;
+  padding: 12px;
+  border-radius: var(--crm-r-lg);
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line);
+  font-size: 11px;
+  color: var(--crm-text-3);
+  line-height: 1.5;
+}
+
+.crm-rail-foot .t {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--crm-text-2);
+  font-weight: 600;
+  font-size: 11.5px;
+  margin-bottom: 4px;
+}
+
+.crm-rail-foot .t svg {
+  color: var(--crm-green);
+}
+
+.crm-rail-foot .keys {
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Coquille principale
+   -------------------------------------------------------------------------- */
+
+.crm-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.crm-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--crm-line);
+  background: rgb(8 11 20 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.crm-head h1 {
+  font-size: 21px;
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+.crm-head .crm-meta {
+  color: var(--crm-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crm-head form {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.crm-head-titles {
+  min-width: 0;
+}
+
+.crm-head-titles .sub {
+  font-size: 12px;
+  color: var(--crm-text-3);
+  margin-top: 1px;
+}
+
+.crm-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+  padding: 20px 24px 48px;
+}
+
+.crm-body.flush {
+  padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Contrôles — recherche, pills, boutons
+   -------------------------------------------------------------------------- */
+
+.crm-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: min(460px, 42vw);
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line-strong);
+  border-radius: 999px;
+  padding: 0 14px;
+  height: 42px;
+  color: var(--crm-text-3);
+}
+
+.crm-search:focus-within {
+  border-color: rgb(124 92 246 / 55%);
+  box-shadow: 0 0 0 3px rgb(124 92 246 / 14%);
+  color: var(--crm-violet);
+}
+
+.crm-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--crm-text);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 0;
+}
+
+.crm-search input:focus {
+  outline: none;
+}
+
+.crm-search input::placeholder {
+  color: var(--crm-text-3);
+}
+
+.crm-kbd {
+  font-family: var(--crm-mono);
+  font-size: 10.5px;
+  min-width: 19px;
+  text-align: center;
+  padding: 2px 5px;
+  border: 1px solid var(--crm-line-strong);
+  border-radius: 6px;
+  color: var(--crm-text-3);
+  background: var(--crm-card-2);
+}
+
+.crm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-card);
+  color: var(--crm-text-2);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.crm-btn:hover {
+  color: var(--crm-text);
+  background: var(--crm-card-2);
+  border-color: var(--crm-line-strong);
+}
+
+.crm-btn.primary {
+  color: #fff;
+  background: linear-gradient(140deg, var(--crm-violet-strong), #6366f1);
+  border-color: transparent;
+  box-shadow: 0 8px 20px -12px rgb(124 92 246 / 100%);
+}
+
+.crm-btn.primary:hover {
+  filter: brightness(1.08);
+}
+
+/* Barre de filtres : des pills, jamais une ligne de liens. */
+.crm-filters {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.crm-filter-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+  margin-right: 3px;
+}
+
+.crm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--crm-line);
+  border-radius: 999px;
+  background: var(--crm-card);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--crm-text-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.crm-chip:hover {
+  color: var(--crm-text);
+  background: var(--crm-card-2);
+  border-color: var(--crm-line-strong);
+}
+
+.crm-chip .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: 0 0 auto;
+}
+
+.crm-chip svg {
+  color: var(--tone);
+}
+
+.crm-chip .n {
+  font-family: var(--crm-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text-3);
+}
+
+.crm-chip.active {
+  color: var(--tone);
+  background: var(--tone-soft);
+  border-color: var(--tone-line);
+  font-weight: 600;
+}
+
+.crm-chip.active .n {
+  color: var(--tone);
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Primitives — carte, en-tête de section, métrique, badge, avatar
+   -------------------------------------------------------------------------- */
+
+.crm-card {
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-xl);
+  padding: 18px;
+  box-shadow: var(--crm-shadow);
+  min-width: 0;
+}
+
+.crm-card + .crm-card {
+  margin-top: 14px;
+}
+
+.crm-card-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.crm-card-head h2,
+.crm-card-head h3 {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--crm-text);
+}
+
+.crm-card-head svg {
+  color: var(--tone);
+}
+
+.crm-card-head .end {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-section {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+/* Grille de métriques — le résumé chiffré, en haut de page. */
+/* ---------------------------------------------------------------------------
+ * Les cartes de filtre — CRM-UX-R1 : un bandeau, pas cinq affiches
+ * ---------------------------------------------------------------------------
+ *
+ * Cinq cartes de 160 px de haut occupaient un cinquième d'un écran de portable
+ * pour cinq nombres qu'on ne relit pas — et elles poussaient la première ligne
+ * de travail à mi-hauteur. Le nombre reste GRAND (c'est ce qu'on vient lire),
+ * la boîte rétrécit : 160 px deviennent 68 px, soit quatre lignes de prospects
+ * rendues à la table.
+ * ------------------------------------------------------------------------ */
+.crm-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 1280px) {
+  .crm-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .crm-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.crm-metric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'icon label'
+    'icon value';
+  align-items: center;
+  column-gap: 10px;
+  position: relative;
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-lg);
+  padding: 10px 13px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Une nappe de teinte très basse — la couleur signale, elle n'éclaire pas. */
+.crm-metric::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--tone-soft), transparent 58%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.crm-metric > * {
+  position: relative;
+  z-index: 1;
+}
+
+a.crm-metric:hover {
+  border-color: var(--tone-line);
+  background: var(--crm-card-2);
+}
+
+a.crm-metric.active {
+  border-color: var(--tone-line);
+  box-shadow: var(--crm-shadow), inset 0 0 0 1px var(--tone-line);
+}
+
+.crm-metric .top {
+  display: contents;
+}
+
+.crm-metric .top .crm-ic {
+  grid-area: icon;
+}
+
+.crm-metric .top .lb {
+  grid-area: label;
+}
+
+.crm-metric .top .lb {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--crm-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-metric .v {
+  grid-area: value;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  color: var(--crm-text);
+}
+
+/* La part et le sous-titre disparaissent : « 42 % du total » se recalcule d'un
+   coup d'œil depuis deux nombres déjà affichés, et occupait une ligne entière
+   sur chacune des cinq cartes. Le libellé et le nombre suffisent. */
+.crm-metric .s {
+  display: none;
+}
+
+.crm-metric .v.sm {
+  font-size: 15.5px;
+  font-weight: 620;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-metric .s {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--crm-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Une mesure qui porte un anneau : le texte à gauche, le dessin à droite. */
+.crm-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.crm-metric-row > div {
+  min-width: 0;
+}
+
+/* Pastille d'icône teintée — le repère visuel d'une métrique ou d'un canal. */
+.crm-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--crm-r-sm);
+  display: grid;
+  place-items: center;
+  color: var(--tone);
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  flex: 0 0 auto;
+}
+
+.crm-ic.lg {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--crm-r-md);
+}
+
+.crm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.crm-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: 0 0 auto;
+}
+
+.crm-badge > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-badge.quiet {
+  background: var(--crm-card-2);
+  border-color: var(--crm-line);
+  color: var(--crm-text-3);
+  font-weight: 500;
+}
+
+.crm-badge.solid {
+  background: var(--tone);
+  border-color: transparent;
+  color: #07101c;
+  font-weight: 700;
+}
+
+/* Le score : un chiffre lu comme un chiffre, teinté par sa bande. */
+.crm-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--crm-r-sm);
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  font-family: var(--crm-mono);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-band {
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--tone);
+}
+
+/* La pastille d'identité. 38 px dans une ligne de 40 px la faisait toucher les
+   deux bords ; à 26 px elle respire et le nom garde sa taille — c'est la BOÎTE
+   qui rétrécit, jamais le texte. Elle reprend sa taille pleine dans la fiche,
+   où elle est la seule marque d'identité. */
+.crm-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--crm-r-sm);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: linear-gradient(150deg, var(--tone-soft), transparent 72%), var(--crm-card-2);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.crm-avatar.lg {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--crm-r-lg);
+  font-size: 21px;
+  color: #fff;
+  background: linear-gradient(150deg, var(--tone-strong), var(--tone));
+  border-color: transparent;
+  box-shadow: 0 10px 24px -14px var(--tone);
+}
+
+/* Anneau de score — la seule « donnée dessinée » de la fiche, et elle est réelle. */
+.crm-ring {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--tone) calc(var(--pct) * 1%), var(--crm-card-3) 0);
+  flex: 0 0 auto;
+}
+
+.crm-ring::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--crm-card);
+}
+
+.crm-ring b {
+  position: relative;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+}
+
+.crm-dim {
+  color: var(--crm-text-3);
+}
+
+.crm-mono {
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+}
+
+.crm-warn {
+  color: var(--crm-red);
+}
+
+/* --------------------------------------------------------------------------
+   Table de prospects — des lignes-cartes, pas une grille de tableur
+   -------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * La table — CRM-UX-R1 : une trame, pas une pile de cartes
+ * ---------------------------------------------------------------------------
+ *
+ * Chaque ligne était une CARTE : quatre filets, deux rayons, huit pixels
+ * d'écart, vingt-deux de rembourrage. Cela donnait des lignes de 93 px, donc
+ * SEPT prospects visibles sur un écran de portable — pour une liste qui en
+ * compte 424. Et comme chaque ligne portait le même contour que toutes les
+ * autres, aucune ne pouvait ressortir.
+ *
+ * La trame reprend ce que fait n'importe quelle console dense : un seul filet
+ * de séparation, aucun fond par ligne, et la hauteur réduite à ce que le
+ * contenu demande. On passe de 93 px à 40 px, donc de 7 lignes à 15 — sans
+ * réduire une seule taille de texte.
+ *
+ * Ce qui distingue une ligne se joue alors sur ce qui est ÉCRIT dedans (le
+ * palier de son action), plus sur la boîte qui l'entoure.
+ * ------------------------------------------------------------------------ */
+.crm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.crm-table.fixed {
+  table-layout: fixed;
+}
+
+.crm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--crm-bg);
+  border-bottom: 1px solid var(--crm-line-strong);
+  text-align: left;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+  padding: 4px 12px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-table thead th a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.crm-table thead th a:hover,
+.crm-table thead th a.on {
+  color: var(--crm-violet);
+}
+
+.crm-table tbody tr {
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-table td {
+  height: 40px;
+  padding: 0 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--crm-text-2);
+}
+
+.crm-table td:first-child {
+  padding-left: 14px;
+}
+
+.crm-table td:last-child {
+  padding-right: 14px;
+}
+
+/* Le survol teinte la LIGNE, il ne la redessine pas : un contour qui apparaît
+   décale l'œil d'un pixel sur chaque ligne traversée. */
+.crm-table tbody tr:hover {
+  background: var(--crm-card-2);
+}
+
+/* La sélection est du violet — la seule teinte qui parle de l'application et
+   non du prospect. Le filet à gauche la rend lisible sans fond vif. */
+.crm-table tbody tr.is-active {
+  background: var(--crm-card-2);
+  box-shadow: inset 2px 0 0 0 var(--crm-violet-strong);
+}
+
+/* La ligne ENTIÈRE ouvre la fiche : viser un nom de douze caractères dans une
+   ligne de quinze cents pixels de large était une cible inutilement petite.
+   Le geste est porté par `row-nav.tsx` et non par un calque absolu — un `<tr>`
+   n'est pas un bloc conteneur fiable, et le calque ne recevait aucun clic
+   (mesuré au navigateur). Ici, il ne reste que le curseur qui l'annonce. */
+.crm-table tbody tr[data-href] {
+  cursor: pointer;
+}
+
+/* Le nom cliquable d'une ligne — la seule valeur au contraste plein. */
+.crm-table a.row-link {
+  color: var(--crm-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.crm-table a.row-link:hover {
+  color: var(--crm-violet);
+}
+
+/* Identité de la ligne : avatar teinté par l'état, nom, seconde ligne discrète. */
+.crm-ident {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.crm-ident .txt {
+  min-width: 0;
+}
+
+.crm-ident .name {
+  display: block;
+  color: var(--crm-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-ident .name:hover {
+  color: var(--crm-violet);
+}
+
+.crm-ident .sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.crm-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-cell svg {
+  color: var(--crm-text-3);
+}
+
+.crm-stack {
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.crm-stack .a {
+  display: block;
+  color: var(--crm-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-stack .b {
+  display: block;
+  font-size: 11px;
+  color: var(--crm-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Liens sortants d'une ligne : deux pastilles, pas deux colonnes de texte. */
+.crm-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-links a {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--crm-r-sm);
+  display: grid;
+  place-items: center;
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  color: var(--crm-text-3);
+}
+
+.crm-links a:hover {
+  color: var(--tone);
+  border-color: var(--tone-line);
+  background: var(--tone-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Pipeline
+   -------------------------------------------------------------------------- */
+
+.crm-board {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-bottom: 12px;
+}
+
+.crm-lane {
+  flex: 1 1 210px;
+  min-width: 210px;
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crm-lane.is-empty {
+  flex: 0 1 150px;
+  min-width: 150px;
+  background: transparent;
+  border-style: dashed;
+}
+
+.crm-lane-head {
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-lane-head .t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--crm-text);
+}
+
+.crm-lane-head .t > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-lane-head .n {
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.crm-lane-head .rule {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--crm-text-3);
+}
+
+.crm-lane-body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crm-lane-fold {
+  flex: 0 0 200px;
+  min-width: 200px;
+  background: var(--crm-card);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-xl);
+  overflow: hidden;
+}
+
+.crm-lane-fold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid var(--crm-line);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--crm-text-2);
+}
+
+.crm-lane-fold-head .n {
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text-3);
+}
+
+.crm-lane-fold ul {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crm-lane-fold a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--crm-r-sm);
+  font-size: 12px;
+  color: var(--crm-text-3);
+  text-decoration: none;
+}
+
+.crm-lane-fold a:hover {
+  color: var(--crm-text);
+  background: var(--crm-card-2);
+}
+
+.crm-lane-fold a .n {
+  font-family: var(--crm-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-lane-fold p {
+  margin: 0 14px 14px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--crm-text-3);
+}
+
+/* Carte de prospect dans une colonne du pipeline. */
+.crm-pcard {
+  display: block;
+  padding: 10px 11px;
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.crm-pcard:hover {
+  background: var(--crm-card-3);
+  border-color: var(--tone-line);
+}
+
+.crm-pcard .name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-pcard .meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--crm-text-3);
+}
+
+.crm-pcard .meta span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-pcard .meta .s {
+  font-family: var(--crm-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+}
+
+/* --------------------------------------------------------------------------
+   Fiche prospect
+   -------------------------------------------------------------------------- */
+
+.crm-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--crm-text-3);
+  text-decoration: none;
+}
+
+.crm-crumb:hover {
+  color: var(--crm-text);
+}
+
+.crm-hero .crm-crumb {
+  margin-bottom: 2px;
+}
+
+.crm-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.crm-hero .title {
+  min-width: 0;
+}
+
+.crm-hero h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-hero .facts {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--crm-text-3);
+}
+
+.crm-hero .facts a {
+  color: var(--crm-text-2);
+  text-decoration: none;
+}
+
+.crm-hero .facts a:hover {
+  color: var(--crm-violet);
+}
+
+.crm-hero .facts .i {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Trois colonnes : identité, activité, intelligence. */
+/* --------------------------------------------------------------------------
+   La vue d'ensemble — CRM-UX-R1 : une hauteur BORNÉE, pas une page qui pousse
+   --------------------------------------------------------------------------
+
+   `align-items: start` laissait chaque colonne grandir avec son contenu, et la
+   plus haute décidait de la hauteur de la page : 1 033 px sur un prospect
+   actif, 1 784 px sur un prospect VIDE — les cartes d'état vide, avec leur
+   pastille et leurs deux phrases d'explication, coûtaient plus que les cartes
+   pleines —, pour une fenêtre qui en offre environ 635.
+
+   Les colonnes occupent maintenant exactement la hauteur disponible. Deux
+   déclarations le rendent possible et aucune n'est facultative :
+   `grid-template-rows: minmax(0, 1fr)` borne la ligne, et `min-height: 0`
+   autorise un enfant de grille à descendre sous la taille de son contenu — sans
+   quoi la grille grandirait quand même.
+
+   Ce qui dépasse défile DANS sa carte. La vue ne peut donc plus grandir, quel
+   que soit le volume : un prospect pathologiquement riche résume, il ne
+   s'étend pas.
+   -------------------------------------------------------------------------- */
+.crm-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr) minmax(0, 0.94fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1180px) {
+  /* Deux colonnes : la troisième passe dessous et la vue redevient défilante.
+     En dessous de cette largeur, tenir la promesse « aucun défilement »
+     imposerait de retirer de l'information — ce qui est le contraire du but. */
+  .crm-panes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: none;
+    height: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .crm-panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.crm-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Une carte qui prend la place restante de sa colonne — et pas un pixel de
+   plus. C'est elle qui porte le défilement, au lieu de le déléguer à la page. */
+/* La carte qui prend la place restante de sa colonne.
+ *
+ * `flex-basis: 0` et non `auto` : avec `auto`, la base de calcul est la hauteur
+ * NATURELLE du contenu, si bien qu'une carte voisine au texte long (six risques,
+ * quatre opportunités) rafle l'espace et écrase celle-ci à sa taille minimale.
+ * Le détail du score se réduisait alors à son anneau, les onze jauges cachées
+ * derrière un défilement de zéro pixel — présentes dans le DOM, invisibles à
+ * l'écran, ce qui est la pire des deux situations.
+ *
+ * Le plancher garantit qu'elle reste lisible même quand ses voisines sont
+ * pleines : sous 190 px, une liste qui défile ne montre plus assez pour qu'on
+ * comprenne ce qu'on fait défiler. */
+.crm-card-fill {
+  flex: 1 1 0;
+  /* Assez bas pour qu'une fenêtre de 780 px de haut n'oblige jamais une carte
+     voisine à sortir de la colonne, assez haut pour qu'une liste qui défile
+     montre de quoi comprendre ce qu'on fait défiler. Le plafond, lui, n'existe
+     pas : cette carte absorbe TOUT l'espace restant. */
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+}
+
+.crm-card-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* La borne de `.crm-scroll` est un `max-height` en `vh`, pensée pour une page
+     qui défile. Ici la hauteur vient du parent : la lever évite qu'une carte
+     s'arrête au milieu de sa colonne en laissant du vide dessous. */
+  max-height: none;
+  margin-right: -6px;
+  padding-right: 6px;
+}
+
+/* Liste clé/valeur — l'identité d'une entreprise, en une carte compacte. */
+.crm-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crm-kv .r {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--crm-line);
+  font-size: 12.5px;
+}
+
+.crm-kv .r:last-child {
+  border-bottom: none;
+}
+
+.crm-kv dt {
+  color: var(--crm-text-3);
+  font-size: 12px;
+}
+
+.crm-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--crm-text);
+}
+
+.crm-kv dd a {
+  color: var(--crm-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--crm-line-strong);
+}
+
+.crm-kv dd a:hover {
+  color: var(--crm-violet);
+  border-bottom-color: var(--crm-violet);
+}
+
+/* Canaux observés : une ligne = un canal, avec sa pastille et sa valeur. */
+.crm-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crm-channel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  min-width: 0;
+}
+
+.crm-channel.absent {
+  background: none;
+  border-style: dashed;
+  opacity: 0.62;
+}
+
+.crm-channel .t {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.crm-channel .t b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-channel .t span,
+.crm-channel .t a {
+  display: block;
+  font-size: 12.5px;
+  color: var(--crm-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-channel .t a:hover {
+  color: var(--tone);
+}
+
+.crm-channel .tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tone);
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+/* Signaux de score : libellé, jauge, points. */
+.crm-signal {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-signal:last-child {
+  border-bottom: none;
+}
+
+.crm-signal .l {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--crm-text);
+}
+
+.crm-signal .l > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crm-signal .p {
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone);
+  white-space: nowrap;
+}
+
+.crm-signal .g {
+  margin-top: 7px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--crm-card-3);
+  overflow: hidden;
+}
+
+.crm-signal .g > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--tone);
+}
+
+.crm-signal .d {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--crm-text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.crm-signal.absent .l {
+  color: var(--crm-text-3);
+}
+
+/* --------------------------------------------------------------------------
+   Timeline — le centre de la fiche
+   -------------------------------------------------------------------------- */
+
+.crm-day {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-day:first-child {
+  margin-top: 0;
+}
+
+.crm-day::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--crm-line);
+}
+
+.crm-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.crm-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 14px;
+}
+
+/* Le fil qui relie les événements — tiré depuis la pastille, jamais au-delà
+   du dernier. */
+.crm-event::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 36px;
+  bottom: 0;
+  width: 1px;
+  background: var(--crm-line);
+}
+
+.crm-event:last-child {
+  padding-bottom: 0;
+}
+
+.crm-event:last-child::before {
+  display: none;
+}
+
+.crm-event > .m {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--crm-r-md);
+  display: grid;
+  place-items: center;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  z-index: 1;
+}
+
+.crm-event-body {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.crm-event-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.crm-event-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--crm-text);
+  overflow-wrap: anywhere;
+}
+
+.crm-event-head .when {
+  font-size: 11px;
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.crm-event-facts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.crm-fact {
+  font-size: 11px;
+  color: var(--crm-text-3);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  border-radius: 999px;
+  padding: 2px 9px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Le texte intégral d'un message reste consultable, jamais imposé. */
+.crm-quote {
+  margin-top: 9px;
+  padding: 11px 13px;
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  border-left: 2px solid var(--tone);
+  white-space: pre-wrap;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--crm-text-2);
+  max-width: 76ch;
+  max-height: 300px;
+  overflow: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Résumé, opportunités, preuves
+   -------------------------------------------------------------------------- */
+
+.crm-prose {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--crm-text-2);
+}
+
+.crm-prose.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.crm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.crm-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.crm-list li {
+  display: flex;
+  gap: 9px;
+  padding: 10px 11px;
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--crm-text-2);
+}
+
+.crm-list li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: 0 0 auto;
+  margin-top: 7px;
+}
+
+.crm-list.plain li {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--crm-line);
+  border-radius: 0;
+  padding: 8px 0;
+}
+
+.crm-list.plain li:last-child {
+  border-bottom: none;
+}
+
+.crm-list .meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--crm-text-3);
+}
+
+/*
+ * Un repli natif : `<details>`, pas d'état React, pas de bibliothèque.
+ * Focalisable et actionnable au clavier sans une ligne de JavaScript, ce qui
+ * est exactement ce qu'un CRM en lecture seule doit coûter.
+ */
+.crm-details {
+  margin-top: 10px;
+}
+
+.crm-details + .crm-details {
+  margin-top: 6px;
+}
+
+.crm-details > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--crm-text-2);
+  list-style: none;
+}
+
+.crm-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.crm-details > summary::after {
+  content: '+';
+  margin-left: auto;
+  font-family: var(--crm-mono);
+  color: var(--crm-text-3);
+}
+
+.crm-details[open] > summary::after {
+  content: '−';
+}
+
+.crm-details > summary:hover {
+  color: var(--crm-text);
+  border-color: var(--crm-line-strong);
+}
+
+.crm-details > *:not(summary) {
+  margin-top: 10px;
+}
+
+/* Références de preuve citées dans un texte produit par le pipeline. */
+.crm-ref {
+  font-family: var(--crm-mono);
+  font-size: 10px;
+  color: var(--crm-text-3);
+  background: var(--crm-card-3);
+  border-radius: 5px;
+  padding: 1px 4px;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Bandeaux et états vides
+   -------------------------------------------------------------------------- */
+
+.crm-banner {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--crm-r-lg);
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin-bottom: 14px;
+  color: var(--crm-text-2);
+}
+
+.crm-banner svg {
+  color: var(--tone);
+  margin-top: 2px;
+}
+
+.crm-banner strong {
+  display: block;
+  color: var(--crm-text);
+  font-weight: 650;
+  margin-bottom: 2px;
+}
+
+/*
+ * Un état vide est une carte, pas un paragraphe d'excuses : une pastille, une
+ * phrase, une ligne d'explication. Rien de plus.
+ */
+.crm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 36px 24px;
+  border-radius: var(--crm-r-xl);
+  background: var(--crm-card);
+  border: 1px dashed var(--crm-line-strong);
+  color: var(--crm-text-3);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.crm-empty .crm-ic {
+  margin-bottom: 8px;
+}
+
+/* Dans une carte, l'état vide ne redouble pas la surface : il la creuse. */
+.crm-card .crm-empty {
+  background: none;
+  padding: 28px 16px;
+}
+
+.crm-empty b {
+  color: var(--crm-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.crm-empty p {
+  margin: 0;
+  max-width: 44ch;
+}
+
+.crm-empty .crm-mono {
+  display: block;
+  margin-top: 10px;
+  color: var(--crm-text-3);
+  max-width: 70ch;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Focus
+
+   Un seul contour, visible sur toute surface, et uniquement au clavier :
+   `:focus-visible` ne se déclenche pas au clic, donc la densité ne paie rien
+   pour la souris.
+   -------------------------------------------------------------------------- */
+
+.crm a:focus-visible,
+.crm summary:focus-visible,
+.crm input:focus-visible {
+  outline: 2px solid var(--crm-violet);
+  outline-offset: 2px;
+  border-radius: var(--crm-r-sm);
+}
+
+/* ==========================================================================
+   FICHE PROSPECT — CRM-UI-R1
+   ==========================================================================
+
+   Une fiche est une APPLICATION dans l'application : en-tête figé, barre
+   d'onglets figée, une seule zone qui défile. C'est ce qui permet de lire une
+   conversation de deux cents messages sans perdre de vue à qui on parle et
+   quel est son score.
+
+   Trois niveaux de défilement, et pas un de plus :
+
+     1. le panneau actif défile — c'est le corps de la fiche ;
+     2. la conversation défile DANS son panneau — un fil long ne doit pas
+        allonger la page ;
+     3. rien d'autre ne défile. Aucun débordement horizontal, jamais.
+
+   La palette ne change pas : ce sont les mêmes six teintes fonctionnelles que
+   le reste du CRM, lues par `var(--tone)`. Aucune règle ci-dessous ne nomme
+   une couleur.
+   -------------------------------------------------------------------------- */
+
+.crm-fiche {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   En-tête — identité à gauche, quatre réponses à droite
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   L'en-tête de la fiche — CRM-UX-R1 : deux rangées, aucune répétition
+   --------------------------------------------------------------------------
+
+   CRM2 posait l'identité et QUATRE blocs de résumé sur une seule rangée
+   horizontale. Sur un écran de portable, la rangée débordait et passait à la
+   ligne : l'en-tête montait à 150 px, et la même information — action, état,
+   dernier envoi — se retrouvait ensuite répétée dans les cartes de la vue
+   d'ensemble.
+
+   Deux rangées explicites remplacent ce repli accidentel. Ce qui est écrit ici
+   n'est plus jamais réécrit dans un panneau : c'est de là que vient la hauteur
+   rendue à la vue d'ensemble.
+   -------------------------------------------------------------------------- */
+
+.crm-phead {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 10px;
+  padding: 12px 22px 12px;
+  border-bottom: 1px solid var(--crm-line);
+  background:
+    radial-gradient(680px 200px at 12% 0%, rgb(124 92 246 / 8%), transparent 70%),
+    rgb(8 11 20 / 82%);
+  backdrop-filter: blur(8px);
+}
+
+.crm-phead-id {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+}
+
+.crm-phead-id .t {
+  min-width: 0;
+}
+
+.crm-phead-id h1 {
+  font-size: 19px;
+  font-weight: 680;
+  letter-spacing: -0.028em;
+  line-height: 1.2;
+  margin-top: 1px;
+  /* Une seule ligne : un nom à rallonge — il en existe de quatre-vingts
+     caractères dans ce corpus — ne doit pas pousser tout l'écran vers le bas. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-phead-id .facts {
+  display: flex;
+  align-items: center;
+  gap: 4px 13px;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--crm-text-2);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.crm-phead-id .facts .i {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-phead-id .facts a.i:hover {
+  color: var(--crm-violet);
+}
+
+.crm-phead-id .facts svg {
+  color: var(--crm-text-3);
+  flex: 0 0 auto;
+}
+
+/* Le score, l'état et le dossier : à droite, sur la rangée d'IDENTITÉ, parce
+   que ce sont des faits stables — pas des consignes. */
+.crm-phead-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.crm-scorebox {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+   Le bandeau de décision
+   --------------------------------------------------------------------------
+
+   Une seule chose de palier 1 par écran, et c'est celle-ci. Les trois cellules
+   qui la suivent sont les CONDITIONS de cette action — où en est la relation,
+   par quel canal agir, quand on s'est parlé — au palier 3. Leur largeur est
+   fixe : elles ne doivent pas grandir avec la longueur d'un libellé, sinon
+   l'action perdrait de la place au profit d'une métadonnée.
+   -------------------------------------------------------------------------- */
+
+.crm-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 190px));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.crm-strip-cell {
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 6px 12px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card);
+}
+
+.crm-strip-cell .k {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-strip-cell .k svg {
+  color: var(--tone);
+}
+
+.crm-strip-cell .v {
+  font-size: 13px;
+  font-weight: 620;
+  letter-spacing: -0.012em;
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-strip-cell .s {
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  /* Sous 1180 px, trois cellules de 190 px écraseraient l'action. Elles
+     passent sous elle plutôt que de la comprimer. */
+  .crm-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .crm-strip .crm-lead {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Onglets
+   -------------------------------------------------------------------------- */
+
+.crm-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--crm-line);
+  background: rgb(11 16 26 / 60%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.crm-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.crm-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--crm-text-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 560;
+  padding: 11px 14px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  transition: color 90ms linear, border-color 90ms linear;
+}
+
+.crm-tab svg {
+  color: var(--crm-text-3);
+}
+
+.crm-tab:hover {
+  color: var(--crm-text);
+}
+
+.crm-tab[aria-selected='true'] {
+  color: var(--crm-text);
+  border-bottom-color: var(--crm-violet-strong);
+}
+
+.crm-tab[aria-selected='true'] svg {
+  color: var(--crm-violet);
+}
+
+.crm-tab:focus-visible {
+  outline: 2px solid var(--crm-violet);
+  outline-offset: -3px;
+  border-radius: var(--crm-r-sm);
+}
+
+.crm-tab .short {
+  display: none;
+}
+
+.crm-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 22px 22px;
+}
+
+/* La vue d'ensemble est le SEUL panneau qui ne défile pas : c'est la promesse
+   de l'onglet. Les autres portent le détail complet et défilent normalement —
+   une histoire de cent quarante-trois événements ne se résume pas. */
+.crm-panel[data-tab='overview'] {
+  overflow: hidden;
+  padding-bottom: 14px;
+}
+
+/* `hidden` doit gagner contre `display:flex` — sans cette règle les cinq
+   panneaux se superposeraient. */
+.crm-panel[hidden] {
+  display: none;
+}
+
+.crm-panel:focus-visible {
+  outline: 2px solid var(--crm-violet);
+  outline-offset: -4px;
+}
+
+/* Un renvoi vers un autre onglet — un bouton, parce que ça n'est pas un lien :
+   rien ne change d'URL. */
+.crm-tablink {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--crm-violet);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  padding: 9px 0 1px;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.crm-tablink:hover {
+  color: var(--crm-text);
+}
+
+.crm-tablink:focus-visible {
+  outline: 2px solid var(--crm-violet);
+  outline-offset: 2px;
+  border-radius: var(--crm-r-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Vue d'ensemble — blocs propres à la colonne centrale
+   -------------------------------------------------------------------------- */
+
+.crm-next {
+  border: 1px solid var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: linear-gradient(155deg, var(--tone-soft), transparent 80%), var(--crm-card-2);
+  padding: 13px 15px;
+}
+
+.crm-next .lb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+
+.crm-next .v {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin-top: 6px;
+  color: var(--crm-text);
+  overflow-wrap: anywhere;
+}
+
+.crm-next .s {
+  font-size: 12px;
+  color: var(--crm-text-2);
+  margin-top: 3px;
+}
+
+.crm-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.crm-facts-grid .f {
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crm-facts-grid .k {
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-facts-grid .v {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.crm-facts-grid .s {
+  font-size: 11px;
+  color: var(--crm-text-3);
+  margin-top: 1px;
+  overflow-wrap: anywhere;
+}
+
+.crm-state-line {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: var(--tone-soft);
+}
+
+.crm-state-line .k {
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+}
+
+.crm-state-line strong {
+  font-size: 14px;
+  font-weight: 660;
+  color: var(--tone);
+}
+
+.crm-state-line .s {
+  font-size: 11px;
+  color: var(--crm-text-3);
+}
+
+.crm-btn.wide {
+  margin-top: 11px;
+  width: 100%;
+  justify-content: center;
+}
+
+.crm-score-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-score-head .b {
+  font-size: 15px;
+  font-weight: 660;
+  color: var(--tone);
+}
+
+.crm-score-head .s {
+  font-size: 11.5px;
+  color: var(--crm-text-3);
+  margin-top: 1px;
+}
+
+.crm-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.crm-counts .c {
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.crm-counts .n {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text);
+}
+
+.crm-counts .l {
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+  overflow-wrap: anywhere;
+}
+
+.crm-timeline.compact .crm-event {
+  padding-bottom: 11px;
+}
+
+/* --------------------------------------------------------------------------
+   Conversation
+   -------------------------------------------------------------------------- */
+
+.crm-convo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.crm-convo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* La règle la plus importante de l'onglet : le fil défile CHEZ LUI. Sans
+   `max-height`, deux cents messages repousseraient le pied de page hors de
+   l'écran et la fiche deviendrait un très long document. */
+.crm-scroll {
+  max-height: 58vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crm-line-strong) transparent;
+}
+
+.crm-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+.crm-scroll::-webkit-scrollbar-thumb {
+  background: var(--crm-line-strong);
+  border-radius: 9px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.crm-thread {
+  padding-right: 6px;
+  margin-top: 2px;
+}
+
+.crm-convo-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-activity-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Une bulle. Trois marqueurs indépendants distinguent les interlocuteurs — le
+   nom, la teinte, la pastille — parce que la couleur seule ne dit rien à qui
+   ne la voit pas. */
+.crm-msg {
+  display: flex;
+  gap: 10px;
+  padding: 7px 0;
+  min-width: 0;
+}
+
+.crm-msg .b {
+  min-width: 0;
+  max-width: min(84%, 620px);
+  border-radius: var(--crm-r-lg);
+  padding: 9px 13px 8px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+}
+
+.crm-msg[data-side='hermes'] .b {
+  border-color: rgb(124 92 246 / 34%);
+  background: linear-gradient(158deg, rgb(124 92 246 / 17%), rgb(124 92 246 / 7%));
+}
+
+.crm-msg[data-status='draft'] .b {
+  border-style: dashed;
+  border-color: rgb(251 191 36 / 40%);
+  background: rgb(251 191 36 / 7%);
+}
+
+.crm-msg-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 3px;
+}
+
+.crm-msg-head b {
+  font-size: 12px;
+  font-weight: 660;
+  color: var(--crm-text);
+}
+
+.crm-msg[data-side='hermes'] .crm-msg-head b {
+  color: var(--crm-violet);
+}
+
+.crm-msg-head .when {
+  font-size: 11px;
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.crm-msg-body {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--crm-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.crm-msg-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--crm-line);
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+}
+
+.crm-msg-meta .ch,
+.crm-msg-meta .st {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tone);
+  font-weight: 560;
+}
+
+.crm-avatar.sm {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--crm-r-sm);
+  font-size: 12px;
+}
+
+/* Un envoi qui n'a rien remis. Ce n'est pas une bulle : personne ne l'a lu. */
+.crm-msg-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 8px 11px;
+  border: 1px dashed var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: var(--tone-soft);
+  font-size: 12px;
+  color: var(--crm-text-2);
+}
+
+.crm-msg-note svg {
+  color: var(--tone);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.crm-msg-note b {
+  color: var(--tone);
+  font-weight: 640;
+}
+
+.crm-msg-note .meta {
+  display: block;
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+  margin-top: 2px;
+}
+
+.crm-msg-note .when {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+/* Le pied du fil : là où une messagerie mettrait sa zone de saisie, et il dit
+   pourquoi il n'y en a pas. */
+.crm-readonly {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+  font-size: 12px;
+  color: var(--crm-text-2);
+  flex: 0 0 auto;
+}
+
+.crm-readonly svg {
+  color: var(--crm-text-3);
+  flex: 0 0 auto;
+}
+
+.crm-readonly b {
+  color: var(--crm-text);
+  font-weight: 640;
+}
+
+/* --------------------------------------------------------------------------
+   Preuves, analyse, dossier
+   -------------------------------------------------------------------------- */
+
+.crm-stackcol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  max-width: 1080px;
+}
+
+.crm-analysis {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.crm-history {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.crm-prose.lead {
+  font-size: 14px;
+  line-height: 1.62;
+  color: var(--crm-text);
+}
+
+.crm-opps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* Une opportunité porte un NUMÉRO, pas un score : le pipeline range ses
+   hypothèses, il ne les note pas. Afficher « impact élevé » ici serait un
+   chiffre que rien n'a calculé. */
+.crm-opp {
+  display: flex;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: linear-gradient(150deg, var(--tone-soft), transparent 78%), var(--crm-card-2);
+}
+
+.crm-opp .n {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-opp p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--crm-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.crm-risks {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.crm-risk {
+  display: flex;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid var(--crm-line);
+  border-left: 2px solid var(--tone-line);
+  border-radius: var(--crm-r-sm);
+  background: var(--crm-card-2);
+}
+
+.crm-risk svg {
+  color: var(--tone);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.crm-risk p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--crm-text-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.crm-reply-analysis {
+  padding: 11px 13px;
+  border: 1px solid var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: var(--crm-card-2);
+}
+
+.crm-reply-analysis + .crm-reply-analysis {
+  margin-top: 9px;
+}
+
+.crm-reply-analysis .h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.crm-reply-analysis .h strong {
+  font-size: 13px;
+  font-weight: 660;
+  color: var(--tone);
+}
+
+.crm-reply-analysis .h .when {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.crm-signal-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-bottom: 11px;
+  border: 1px solid var(--tone-line);
+  border-radius: var(--crm-r-md);
+  background: linear-gradient(150deg, var(--tone-soft), transparent 80%);
+}
+
+.crm-signal-line b {
+  display: block;
+  font-size: 14px;
+  font-weight: 660;
+  color: var(--tone);
+  overflow-wrap: anywhere;
+}
+
+.crm-signal-line .s {
+  display: block;
+  font-size: 11.5px;
+  color: var(--crm-text-3);
+  margin-top: 1px;
+}
+
+.crm-kv.wide .r {
+  grid-template-columns: 148px minmax(0, 1fr);
+}
+
+.crm-states {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.crm-states li {
+  display: grid;
+  grid-template-columns: 128px minmax(0, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--crm-line);
+  font-size: 12px;
+}
+
+.crm-states li:last-child {
+  border-bottom: 0;
+}
+
+.crm-states .when {
+  color: var(--crm-text-3);
+  font-size: 11px;
+}
+
+.crm-states .tr {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--crm-mono);
+  font-size: 11.5px;
+}
+
+.crm-states .from {
+  color: var(--crm-text-3);
+}
+
+.crm-states .ar {
+  color: var(--crm-violet);
+}
+
+.crm-states .to {
+  color: var(--crm-text);
+  font-weight: 600;
+}
+
+.crm-states .why {
+  color: var(--crm-text-3);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   Adaptation — l'ordinateur de bureau d'abord, mais rien ne déborde jamais
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1280px) {
+  .crm-convo-layout,
+  .crm-analysis,
+  .crm-history {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .crm-scroll {
+    max-height: 52vh;
+  }
+}
+
+@media (max-width: 900px) {
+  .crm-phead,
+  .crm-tabs,
+  .crm-panel {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .crm-tab .full {
+    display: none;
+  }
+
+  .crm-tab .short {
+    display: inline;
+  }
+
+  /* Le score et le bouton « dossier complet » quittent la rangée d'identité
+     avant que le nom ne soit écrasé : sous 900 px, un nom lisible vaut mieux
+     qu'un raccourci. */
+  .crm-phead-right .crm-btn span {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .crm-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .crm-facts-grid,
+  .crm-counts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .crm-msg .b {
+    max-width: 100%;
+  }
+
+  .crm-states li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+  }
+
+  .crm-kv.wide .r {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ===========================================================================
+ * CRM-UX-R1 — retour de navigation et squelettes
+ *
+ * Deux choses seulement, et elles répondent à la même question : « mon clic
+ * a-t-il été pris ? ». Le rail répond tout de suite, la route répond quand elle
+ * peut. Aucune des deux ne fait semblant que la donnée est arrivée.
+ * ======================================================================== */
+
+/* Le fil de progression d'une entrée du rail. Toujours présent, jamais
+   déplaçant : seule l'opacité et l'échelle horizontale changent, donc le
+   libellé ne bouge pas d'un pixel quand il s'allume. */
+.crm-rail a {
+  position: relative;
+}
+
+.crm-rail-pending {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--crm-violet);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.crm-rail-pending[data-pending='yes'] {
+  opacity: 1;
+  animation: crm-pending 1.1s ease-out infinite;
+}
+
+@keyframes crm-pending {
+  0% {
+    transform: scaleX(0.04);
+    opacity: 0.35;
+  }
+  55% {
+    transform: scaleX(0.72);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0.25;
+  }
+}
+
+/* Une surface vide, à la dimension de ce qui arrive. Une seule pulsation lente
+   et partagée : plusieurs cadences donneraient un scintillement, et c'est
+   précisément ce qui fait paraître une page LENTE. */
+.crm-bone {
+  display: block;
+  border-radius: 5px;
+  background: var(--crm-card-3);
+  animation: crm-bone 1.6s ease-in-out infinite;
+}
+
+@keyframes crm-bone {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.crm-skeleton-rows {
+  display: grid;
+  gap: 1px;
+  margin-top: 12px;
+  border-radius: var(--crm-r-lg);
+  overflow: hidden;
+  background: var(--crm-line);
+}
+
+.crm-skeleton-rows .r {
+  display: grid;
+  grid-template-columns: 2fr repeat(var(--cols, 6), minmax(0, 1fr));
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: 40px;
+  background: var(--crm-card);
+}
+
+.crm-skeleton-panes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.crm-skeleton-panes .crm-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 220px;
+}
+
+/* Le squelette est muet pour les lecteurs d'écran ; cette phrase le remplace. */
+.crm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Moins de mouvement demandé : les surfaces restent, l'animation part. */
+@media (prefers-reduced-motion: reduce) {
+  .crm-bone,
+  .crm-rail-pending[data-pending='yes'] {
+    animation: none;
+  }
+
+  .crm-rail-pending[data-pending='yes'] {
+    transform: scaleX(1);
+    opacity: 0.8;
+  }
+}
+
+/* La pagination : un rang, deux boutons. Elle vit sous la table, jamais en
+   flottant — un contrôle qui recouvre la dernière ligne fait manquer la ligne. */
+.crm-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card);
+  font-size: 12px;
+  color: var(--crm-text-2);
+}
+
+.crm-pager .range b {
+  color: var(--crm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-pager .nav {
+  display: flex;
+  gap: 8px;
+}
+
+.crm-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--crm-r-sm);
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-card-2);
+  color: var(--crm-text);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.crm-pager-btn:hover {
+  border-color: var(--crm-violet);
+  color: #fff;
+}
+
+/* Une extrémité atteinte reste VISIBLE et cesse d'être un lien : la faire
+   disparaître déplacerait le bouton restant sous le curseur. */
+.crm-pager-btn.is-off {
+  opacity: 0.34;
+  cursor: default;
+}
+
+/* ===========================================================================
+ * CRM-UX-R1 — LES PALIERS
+ *
+ * La teinte dit ce qu'une information SIGNIFIE ; le palier dit ce qu'elle
+ * PÈSE. Les deux sont indépendants, et c'est ce qui permet d'écrire « positif
+ * mais secondaire » sans inventer un vert pâle de plus.
+ *
+ * Le défaut corrigé n'était pas un mauvais choix de couleur, c'était l'absence
+ * de deuxième axe : sur une ligne d'Inbox, une pastille de corrélation
+ * technique et la seule colonne à lire avaient exactement le même poids.
+ *
+ *   1 — la décision. Surface teintée, filet à gauche, texte le plus grand.
+ *       Au plus UNE par région : deux premiers ne font pas de premier.
+ *   2 — l'état. Pastille teintée, contour discret. C'est le palier par défaut.
+ *   3 — la preuve. Aucun fond, la teinte passe dans le texte et une puce.
+ *   4 — la métadonnée. Aucune teinte du tout, le plus petit contraste lisible.
+ *
+ * Un palier ne retire jamais une information : il la fait reculer.
+ * ======================================================================== */
+
+.crm [data-tier='1'] {
+  --tone-soft: color-mix(in srgb, var(--tone) 18%, transparent);
+  --tone-line: color-mix(in srgb, var(--tone) 46%, transparent);
+}
+
+/* Le porteur d'une décision : une bande de teinte à gauche, un fond teinté, et
+   la seule taille de texte qui dépasse celle du corps de la page. */
+.crm-lead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 9px 14px 9px 12px;
+  border-radius: var(--crm-r-md);
+  background: var(--tone-soft);
+  box-shadow:
+    inset 0 0 0 1px var(--tone-line),
+    inset 3px 0 0 0 var(--tone);
+}
+
+.crm-lead .crm-ic {
+  flex: none;
+  color: var(--tone);
+}
+
+.crm-lead .tx {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.crm-lead .k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tone);
+}
+
+.crm-lead .v {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--crm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-lead .s {
+  font-size: 11px;
+  color: var(--crm-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Palier 3 : la teinte quitte le fond et passe dans le texte. La puce garde le
+   signal lisible sans couleur — « never rely on color alone ». */
+.crm-badge[data-tier='3'] {
+  height: 20px;
+  padding: 0 7px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--crm-text-2);
+  font-weight: 550;
+}
+
+.crm-badge[data-tier='3'] .dot {
+  background: var(--tone);
+}
+
+/* Palier 4 : plus aucune teinte. Une métadonnée qui porte une couleur prétend
+   signifier quelque chose. */
+.crm-badge[data-tier='4'] {
+  height: 20px;
+  padding: 0 7px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--crm-text-3);
+  font-weight: 500;
+}
+
+.crm-badge[data-tier='4'] .dot {
+  background: var(--crm-text-3);
+}
+
+.crm-badge[data-tier='1'] {
+  height: 26px;
+  font-weight: 700;
+  color: var(--crm-text);
+}
+
+.crm-badge[data-tier='1'] .dot,
+.crm-badge[data-tier='1'] svg {
+  color: var(--tone);
+}
+
+/* L'identifiant canonique, gardé à côté de sa traduction. Il ne disparaît
+   jamais — c'est ce qui permet de retrouver la ligne en base — mais il
+   n'occupe que la place d'une provenance. */
+.crm-raw {
+  font-family: var(--crm-mono);
+  font-size: 10.5px;
+  color: var(--crm-text-3);
+  letter-spacing: -0.01em;
+}
+
+/* Le texte d'un message dans une ligne de table. UNE ligne, coupée par une
+   ellipse, l'intégralité en infobulle : un retour à la ligne dans une seule
+   colonne détruirait le rythme vertical de toutes les autres. */
+.crm-quote-line {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--crm-text-2);
+  font-size: 12px;
+}
+
+.crm-quote-line b {
+  color: var(--crm-text);
+  font-weight: 600;
+}
+
+/* Une cellule qui empile deux informations de paliers différents reste dans la
+   hauteur de ligne : la seconde est une provenance, pas une seconde ligne. */
+.crm-table .crm-stack {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* Une puce muette : l'information est dans l'infobulle, la place occupée est
+   nulle. Réservée au cas ORDINAIRE d'une valeur qui, quand elle s'écarte,
+   s'écrit en toutes lettres. */
+.crm-dot-quiet {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 7px;
+  border-radius: 999px;
+  background: var(--crm-text-3);
+  vertical-align: middle;
+}
+
+/* Un écart signalé DANS une ligne de métadonnée : la teinte revient, la taille
+   ne change pas. */
+.crm-flag {
+  color: var(--tone);
+  font-weight: 650;
+}
+
+/* Une colonne de la vue d'ensemble ne laisse rien s'échapper. Le panneau étant
+   en `overflow: hidden`, un dépassement ici ne défilerait pas — il serait
+   COUPÉ, ce qui est pire qu'un défilement. La règle est donc une sécurité :
+   toute carte d'une colonne doit gérer sa propre hauteur (`crm-card-fill` +
+   `crm-card-scroll`), et celle-ci garantit qu'un oubli se voie tout de suite. */
+.crm-pane {
+  overflow: hidden;
+}
+
+/* Une note de bas de carte : petite, mais jamais sous le seuil de lisibilité. */
+.crm-prose.crm-note {
+  font-size: 11px;
+  margin-top: 8px;
+  color: var(--crm-text-3);
+}
+
+/* Listes resserrées de la vue d'ensemble — deux entrées, pas dix. */
+.crm-list.tight li {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.crm-kv.tight .r {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Une zone qui défile dans une carte se termine forcément au milieu de quelque
+   chose — une demi-ligne de texte, une pastille coupée en deux. C'est lisible
+   comme un DÉFAUT alors que c'est une invitation à faire défiler. Un fondu de
+   vingt pixels sur le dernier segment le dit sans ajouter ni ombre, ni flèche,
+   ni barre : le texte s'éteint, donc il continue.
+
+   `mask-image` plutôt qu'un dégradé posé par-dessus : un calque opaque devrait
+   connaître la couleur du fond de la carte, et cesserait d'être juste dès que
+   la carte change de teinte. */
+.crm-card-scroll {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent 100%);
+}
+
+/* Arrivé en bas, il n'y a plus rien à annoncer : le fondu disparaît. */
+.crm-card-scroll:not(:hover) {
+  scrollbar-width: thin;
+}
+
+/* Dans la vue d'ensemble, une entrée de liste tient sur DEUX lignes.
+ *
+ * Ce n'est pas une coquetterie typographique : la hauteur d'une carte de
+ * risques dépendait de la longueur des phrases du pipeline, qui varie du simple
+ * au quadruple. La colonne dépassait alors sa hauteur bornée et la dernière
+ * carte était COUPÉE — invisible et non défilable, la pire des deux situations.
+ *
+ * Deux lignes rendent la hauteur prévisible, donc la colonne fiable. Le texte
+ * intégral n'est pas perdu : il vit dans l'onglet d'analyse, où le renvoi de
+ * chaque carte mène déjà. C'est exactement ce que « résumer plutôt que
+ * s'étendre » veut dire. */
+.crm-list.clamp2 li > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Une carte à hauteur FERME : elle ne s'étire pas et ne se comprime pas.
+   C'est ce qui rend la hauteur d'une colonne prévisible, donc ce qui permet à
+   la carte extensible d'absorber tout le reste sans jamais déborder. */
+.crm-card-firm {
+  flex: 0 0 auto;
+}
+
+/* Dans la vue d'ensemble, une carte respire moins : dix-huit pixels de
+   rembourrage sur quatre cartes empilées coûtent cent quarante pixels de
+   colonne — c'est-à-dire deux entrées de liste. */
+.crm-panel[data-tab='overview'] .crm-card {
+  padding: 14px;
+}
+
+.crm-panel[data-tab='overview'] .crm-card + .crm-card {
+  margin-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Le tableau du pipeline — CRM-UX-R1
+   -------------------------------------------------------------------------- */
+
+/* Six colonnes de 210 px et leurs écarts dépassaient la largeur utile : la
+   dernière — « Pas intéressés » — était coupée au bord droit, et rien ne le
+   disait. 186 px les font tenir, et le défilement horizontal reste là pour les
+   largeurs où même cela ne suffit pas. */
+.crm-lane {
+  flex: 1 1 186px;
+  min-width: 186px;
+}
+
+/* La colonne où quelqu'un attend. Un filet, pas un fond : un aplat de couleur
+   sur toute une colonne de cartes rendrait les cartes elles-mêmes illisibles. */
+.crm-lane[data-waiting='yes'] {
+  border-color: var(--tone-line);
+}
+
+.crm-lane[data-waiting='yes'] .crm-lane-head {
+  background: var(--tone-soft);
+  box-shadow: inset 0 2px 0 0 var(--tone);
+}
+
+/* Le score et l'âge tiennent sur une ligne. En les laissant passer à la ligne,
+   les cartes d'une même colonne prenaient trois hauteurs différentes et le
+   balayage vertical devenait impossible. */
+.crm-pcard .meta .s {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.crm-pcard .name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* La puce d'une action recommandée : elle signale, elle ne repeint pas. */
+.crm-pcard-flag {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--tone);
+}
+
+/* La bande des sorties : sous le tableau, sur une ligne, repliable à l'œil.
+   Elle ne prend plus de largeur au funnel actif. */
+.crm-lane-fold {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 12px;
+  padding: 9px 13px;
+  border: 1px dashed var(--crm-line-strong);
+  border-radius: var(--crm-r-lg);
+  background: transparent;
+}
+
+.crm-lane-fold-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+  margin-right: 4px;
+}
+
+.crm-lane-fold ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crm-lane-fold li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--crm-line);
+  color: var(--crm-text-3);
+  text-decoration: none;
+  font-size: 11.5px;
+}
+
+.crm-lane-fold li a:hover {
+  border-color: var(--crm-violet);
+  color: var(--crm-text);
+}
+
+.crm-lane-fold li a .n {
+  font-family: var(--crm-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--crm-text-3);
+}
+
+/* Le nom d'une carte de pipeline tronque proprement. */
+.crm-pcard .name .n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===========================================================================
+ * CRM-R3 — la direction artistique « surface éclairée »
+ * ===========================================================================
+ *
+ * Ce bloc reprend, dans l'ordre où on les voit, les éléments dont CRM-UX-R1
+ * avait la STRUCTURE juste et la MATIÈRE absente. Rien n'y change ce qu'un
+ * écran affirme : aucun sélecteur ci-dessous ne dépend d'une donnée métier, et
+ * les teintes fonctionnelles restent celles de `view.ts`.
+ *
+ * ---------------------------------------------------------------------------
+ * Les quatre décisions
+ * ---------------------------------------------------------------------------
+ *
+ *   1. UNE SURFACE SE VOIT. Une carte n'est plus un rectangle légèrement plus
+ *      clair : elle porte un fond relevé, un filet, un reflet interne d'un
+ *      pixel et une ombre portée. C'est la différence entre « du texte sur du
+ *      noir » et « un objet posé ».
+ *   2. CE QUI EST CLIQUABLE LE MONTRE AVANT LE CLIC. Bouton, onglet, chip,
+ *      ligne de tableau : chacun a un état de repos qui a du relief, un survol
+ *      qui monte d'un cran, et un état actif qui prend la teinte de marque.
+ *   3. LE VIOLET EST UNE IDENTITÉ, PAS UN ACCENT. Marque, navigation active,
+ *      filtre retenu, focus, action principale. Les six autres teintes gardent
+ *      leur sens métier et ne servent jamais de décor.
+ *   4. LA HIÉRARCHIE PASSE PAR LA TAILLE. Un titre de page fait le double d'un
+ *      libellé ; un nombre de synthèse fait le double d'une donnée de ligne.
+ *      Aucun texte de l'interface ne descend sous 11,5 px.
+ */
+
+/* --------------------------------------------------------------------------
+   Rail — la marque, puis le travail
+   -------------------------------------------------------------------------- */
+
+.crm-rail {
+  gap: 3px;
+  padding: 18px 14px 16px;
+  background: linear-gradient(180deg, rgb(124 92 246 / 5%), transparent 220px), var(--crm-rail);
+  border-right: 1px solid var(--crm-line);
+}
+
+.crm-rail-brand {
+  gap: 12px;
+  padding: 2px 6px 18px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-rail-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  background: linear-gradient(150deg, #a78bfa, #6d3ff5 62%, #4c1fd6);
+  border: 0;
+  color: #fff;
+  box-shadow: 0 6px 18px -6px rgb(124 92 246 / 70%), var(--crm-lift);
+}
+
+.crm-rail-brand b {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--crm-text);
+}
+
+.crm-rail-brand small {
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--crm-text-3);
+}
+
+.crm-rail-group {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: var(--crm-text-3);
+  padding: 16px 10px 7px;
+}
+
+.crm-rail a {
+  gap: 11px;
+  padding: 0 12px;
+  height: 42px;
+  border-radius: 13px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--crm-text-2);
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.crm-rail a svg {
+  color: var(--crm-text-3);
+  transition: color 120ms ease;
+}
+
+.crm-rail a:hover {
+  background: var(--crm-card);
+  border-color: var(--crm-line);
+  color: var(--crm-text);
+}
+
+.crm-rail a:hover svg {
+  color: var(--crm-text-2);
+}
+
+/* L'entrée active : la seule chose violette de la colonne, et elle est
+   INDISCUTABLE — fond teinté, filet violet, texte plein, icône de marque. */
+.crm-rail a.active {
+  background: linear-gradient(135deg, rgb(124 92 246 / 26%), rgb(124 92 246 / 12%));
+  border-color: rgb(139 110 250 / 46%);
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 8px 22px -14px rgb(124 92 246 / 90%), var(--crm-lift);
+}
+
+.crm-rail a.active svg {
+  color: #c4b5fd;
+}
+
+.crm-rail a .count {
+  font-size: 11.5px;
+  font-weight: 650;
+  min-width: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  color: var(--crm-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-rail a.active .count {
+  background: rgb(124 92 246 / 34%);
+  border-color: rgb(167 139 250 / 40%);
+  color: #ede9fe;
+}
+
+.crm-rail-foot {
+  margin-top: auto;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-lift);
+  padding: 13px 14px;
+  font-size: 12px;
+  color: var(--crm-text-3);
+}
+
+.crm-rail-foot .t {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--crm-green);
+  margin-bottom: 3px;
+}
+
+.crm-kbd {
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border-radius: 7px;
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line-strong);
+  color: var(--crm-text-2);
+  box-shadow: 0 1px 0 var(--crm-line);
+}
+
+/* --------------------------------------------------------------------------
+   En-tête de page — le titre reprend sa taille
+   -------------------------------------------------------------------------- */
+
+.crm-head {
+  padding: 22px 28px 18px;
+  gap: 18px;
+  border-bottom: 1px solid var(--crm-line);
+  background: linear-gradient(180deg, rgb(255 255 255 / 2.5%), transparent);
+}
+
+.crm-head h1 {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.033em;
+  line-height: 1.1;
+  color: var(--crm-text);
+}
+
+.crm-head-titles .sub {
+  font-size: 13.5px;
+  color: var(--crm-text-2);
+  margin-top: 5px;
+}
+
+.crm-head .crm-meta {
+  font-size: 12.5px;
+  color: var(--crm-text-3);
+}
+
+.crm-body {
+  padding: 20px 28px 28px;
+  gap: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Contrôles — recherche, boutons, chips
+   -------------------------------------------------------------------------- */
+
+.crm-search {
+  height: 44px;
+  min-width: 340px;
+  padding: 0 12px 0 15px;
+  gap: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-lift);
+  color: var(--crm-text-3);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.crm-search:hover {
+  border-color: var(--crm-line-strong);
+}
+
+.crm-search:focus-within {
+  border-color: rgb(139 110 250 / 62%);
+  box-shadow: 0 0 0 4px rgb(124 92 246 / 16%), var(--crm-lift);
+}
+
+.crm-search input {
+  font-size: 14px;
+  color: var(--crm-text);
+}
+
+.crm-btn {
+  height: 44px;
+  padding: 0 18px;
+  gap: 9px;
+  border-radius: 13px;
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-sheen-strong), var(--crm-card-2);
+  color: var(--crm-text);
+  font-size: 14px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+  transition: transform 110ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.crm-btn svg {
+  color: var(--crm-text-2);
+}
+
+.crm-btn:hover {
+  background: var(--crm-sheen-strong), var(--crm-card-3);
+  border-color: rgb(139 110 250 / 46%);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.crm-btn:hover svg {
+  color: #c4b5fd;
+}
+
+.crm-btn.primary {
+  background: linear-gradient(150deg, #8b6efa, #6d3ff5 70%);
+  border-color: rgb(167 139 250 / 55%);
+  color: #fff;
+  box-shadow: var(--crm-violet-glow);
+}
+
+.crm-btn.primary svg,
+.crm-btn.primary:hover svg {
+  color: #fff;
+}
+
+.crm-btn.primary:hover {
+  background: linear-gradient(150deg, #9b81ff, #7a51ff 70%);
+}
+
+/* La barre de filtres devient une SURFACE : deux rangées de pastilles posées
+   sur le fond nu lisaient « brouillon », pas « contrôle ». */
+.crm-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px 15px;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-lift);
+}
+
+.crm-toolbar .crm-filters {
+  margin: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.crm-toolbar .crm-filters + .crm-filters {
+  padding-top: 10px;
+  border-top: 1px dashed var(--crm-line);
+}
+
+.crm-filter-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  color: var(--crm-text-3);
+  min-width: 54px;
+}
+
+.crm-chip {
+  height: 32px;
+  padding: 0 12px;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+  color: var(--crm-text-2);
+  font-size: 13px;
+  font-weight: 550;
+  transition: background 110ms ease, border-color 110ms ease, color 110ms ease, transform 110ms ease;
+}
+
+.crm-chip:hover {
+  background: var(--crm-card-3);
+  border-color: var(--crm-line-strong);
+  color: var(--crm-text);
+  transform: translateY(-1px);
+}
+
+.crm-chip .n {
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 6%);
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-chip.active {
+  background: var(--tone-soft);
+  border-color: var(--tone-line);
+  color: var(--tone);
+  font-weight: 650;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 12%, transparent);
+}
+
+.crm-chip.active .n {
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+  color: var(--tone);
+}
+
+.crm-chip .dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Cartes
+   -------------------------------------------------------------------------- */
+
+.crm-card {
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+  padding: 16px 18px;
+}
+
+.crm-card-head {
+  gap: 9px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-card-head h2,
+.crm-card-head h3 {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--crm-text);
+}
+
+.crm-card-head svg {
+  color: var(--tone);
+}
+
+.crm-card-head .end {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--crm-text-3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Métriques — les cinq filtres du haut de la liste
+   -------------------------------------------------------------------------- */
+
+.crm-metrics {
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+/* La carte passe de la grille « icône | libellé / valeur » à une COLONNE :
+   rangée d'identification en haut, nombre en grand, part observée dessous.
+   C'est la forme qui laisse le nombre respirer — et la part, supprimée quand
+   la carte faisait 68 px de haut, redevient lisible sans coûter une ligne à
+   la table. */
+a.crm-metric {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 15px;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+a.crm-metric::after {
+  /* Le liseré de teinte du haut : trois pixels qui disent de quelle colonne du
+     pipeline la carte parle, sans repeindre la carte entière. */
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  border-radius: var(--crm-r-lg) var(--crm-r-lg) 0 0;
+  background: linear-gradient(90deg, var(--tone), color-mix(in srgb, var(--tone) 18%, transparent));
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+a.crm-metric:hover {
+  transform: translateY(-2px);
+  background: var(--crm-sheen), var(--crm-card-2);
+  border-color: var(--crm-line-strong);
+  box-shadow: var(--crm-shadow-lift), var(--crm-lift);
+}
+
+a.crm-metric:hover::after {
+  opacity: 1;
+}
+
+.crm-metric .top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+  min-width: 0;
+}
+
+.crm-metric .top .crm-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+}
+
+.crm-metric .top .lb {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--crm-text-2);
+}
+
+.crm-metric .v {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--crm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-metric .s {
+  display: block;
+  font-size: 12px;
+  color: var(--crm-text-3);
+  margin-top: 7px;
+}
+
+a.crm-metric.active {
+  border-color: rgb(139 110 250 / 58%);
+  background:
+    linear-gradient(180deg, rgb(124 92 246 / 18%), rgb(124 92 246 / 5%)),
+    var(--crm-card);
+  box-shadow: 0 0 0 3px rgb(124 92 246 / 15%), var(--crm-shadow-lift), var(--crm-lift);
+}
+
+a.crm-metric.active::after {
+  opacity: 1;
+}
+
+.crm-metric.active .v {
+  color: #fff;
+}
+
+.crm-metric.active .top .lb {
+  color: #ddd6fe;
+}
+
+/* --------------------------------------------------------------------------
+   Tableaux — une table est un objet, pas du texte aligné
+   -------------------------------------------------------------------------- */
+
+.crm-panelcard {
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+  overflow: hidden;
+}
+
+.crm-panelcard .crm-table {
+  margin: 0;
+}
+
+/* L'en-tête est une BANDE, pas une première ligne.
+   À #1c2233 sur des lignes à #171d2d, l'écart était de quatre points de
+   luminance : la rangée de titres se confondait avec la première ligne de
+   données, et la table entière lisait comme un bloc de texte aligné. Elle
+   monte d'un cran et pose un filet net dessous.
+
+   11 px avec 0,055 em de chasse font 98 px pour « LOCALISATION », dans une
+   colonne qui en offre 102 : la marge est trop mince, et l'ellipse revenait
+   dès qu'une fenêtre perdait cinquante pixels. 10,6 px la rendent. */
+.crm-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 13px 12px;
+  font-size: 10.6px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--crm-text-2);
+  background: linear-gradient(180deg, #232a3d, #1d2434);
+  border-bottom: 1px solid var(--crm-line-strong);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 4%) inset;
+}
+
+.crm-table thead th:first-child {
+  padding-left: 18px;
+}
+
+.crm-table thead th:last-child {
+  padding-right: 18px;
+}
+
+.crm-table thead th a:hover,
+.crm-table thead th a.on {
+  color: var(--crm-violet);
+}
+
+/* La densité est une donnée du travail, pas un goût. 424 lignes se balaient ;
+   une ligne de 82 px n'en montre que neuf par écran, ce qui transforme le
+   balayage en défilement. Le rembourrage et les interlignes sont donc serrés
+   d'un cran APRÈS avoir relevé le corps de texte — la ligne regagne vingt
+   pixels sans qu'aucun caractère ne rapetisse. */
+.crm-table td {
+  padding: 8px 12px;
+  font-size: 13.8px;
+  line-height: 1.4;
+  border-bottom: 1px solid rgb(38 46 66 / 62%);
+}
+
+.crm-ident .name {
+  line-height: 1.35;
+}
+
+.crm-ident .sub {
+  line-height: 1.35;
+}
+
+.crm-table .crm-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+
+.crm-table td:first-child {
+  padding-left: 18px;
+}
+
+.crm-table td:last-child {
+  padding-right: 18px;
+}
+
+.crm-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.crm-table tbody tr {
+  transition: background 100ms ease;
+}
+
+/* Le survol d'une ligne : un fond relevé ET une barre violette au bord
+   gauche. Le fond seul se lisait mal sur une table de neuf colonnes — l'œil,
+   parti du milieu de l'écran, ne voyait pas où la ligne commençait. */
+.crm-table tbody tr[data-href]:hover td {
+  background: rgb(124 92 246 / 8%);
+}
+
+.crm-table tbody tr[data-href]:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--crm-violet);
+}
+
+.crm-table tbody tr.is-active td {
+  background: rgb(124 92 246 / 14%);
+}
+
+.crm-table tbody tr.is-active td:first-child {
+  box-shadow: inset 3px 0 0 var(--crm-violet-strong);
+}
+
+.crm-ident {
+  gap: 11px;
+}
+
+.crm-ident .name {
+  font-size: 14.2px;
+  font-weight: 620;
+  letter-spacing: -0.012em;
+  color: var(--crm-text);
+}
+
+.crm-ident .name:hover {
+  color: #c4b5fd;
+}
+
+.crm-ident .sub {
+  font-size: 12px;
+  color: var(--crm-text-3);
+}
+
+.crm-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 700;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--tone) 34%, transparent), color-mix(in srgb, var(--tone) 12%, transparent));
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  box-shadow: var(--crm-lift);
+}
+
+.crm-avatar.lg {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  font-size: 21px;
+}
+
+.crm-avatar.sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.crm-score {
+  font-size: 14.5px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 9px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+}
+
+.crm-band {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--crm-text-3);
+}
+
+.crm-links a {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+  color: var(--crm-text-3);
+  transition: background 110ms ease, color 110ms ease, border-color 110ms ease;
+}
+
+.crm-links a:hover {
+  background: var(--tone-soft);
+  border-color: var(--tone-line);
+  color: var(--tone);
+}
+
+.crm-stack .a {
+  font-size: 13.5px;
+}
+
+.crm-stack .b {
+  font-size: 11.5px;
+}
+
+/* --------------------------------------------------------------------------
+   Pastilles — le poids se voit à la surface, pas au hasard
+   -------------------------------------------------------------------------- */
+
+.crm-badge {
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12.8px;
+  font-weight: 600;
+  border: 1px solid var(--tone-line);
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.crm-badge[data-tier='1'] {
+  padding: 6px 13px;
+  font-size: 13.2px;
+  font-weight: 680;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+  border-color: color-mix(in srgb, var(--tone) 55%, transparent);
+  color: color-mix(in srgb, var(--tone) 82%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 10%, transparent);
+}
+
+.crm-badge[data-tier='3'] {
+  background: rgb(255 255 255 / 4%);
+  border-color: var(--crm-line);
+  color: var(--crm-text-2);
+}
+
+.crm-badge[data-tier='3'] svg {
+  color: var(--tone);
+}
+
+.crm-badge[data-tier='4'] {
+  background: transparent;
+  border-color: transparent;
+  color: var(--crm-text-3);
+  padding-left: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Pagination
+   -------------------------------------------------------------------------- */
+
+.crm-pager {
+  margin: 0;
+  padding: 13px 18px;
+  border-top: 1px solid var(--crm-line);
+  background: rgb(255 255 255 / 2%);
+  font-size: 13px;
+}
+
+.crm-pager-btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 11px;
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-card-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--crm-text);
+}
+
+.crm-pager-btn:hover {
+  background: var(--crm-card-3);
+  border-color: rgb(139 110 250 / 46%);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Fiche prospect
+   -------------------------------------------------------------------------- */
+
+.crm-phead {
+  padding: 18px 28px 16px;
+  gap: 14px;
+  background:
+    radial-gradient(760px 240px at 10% 0%, rgb(124 92 246 / 12%), transparent 70%),
+    linear-gradient(180deg, rgb(255 255 255 / 3%), transparent),
+    rgb(9 11 19 / 88%);
+}
+
+.crm-phead-id {
+  gap: 16px;
+}
+
+.crm-phead-id h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.033em;
+}
+
+.crm-phead-id .facts {
+  font-size: 12.8px;
+  gap: 5px 16px;
+  margin-top: 5px;
+}
+
+.crm-crumb {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--crm-text-3);
+}
+
+.crm-phead-right {
+  gap: 12px;
+}
+
+.crm-scorebox .crm-score {
+  font-size: 19px;
+  padding: 6px 13px;
+  border-radius: 12px;
+}
+
+.crm-scorebox .crm-band {
+  font-size: 13px;
+}
+
+/* Le bandeau de décision. L'action porte une vraie surface teintée, les trois
+   conditions restent des cartes sobres — l'écart de poids se voit sans qu'un
+   mot ait changé. */
+/* Les trois conditions cessent d'être des colonnes fixes de 210 px. Le
+   bandeau mesure 1 570 px : l'action y prenait 740 px, dont l'essentiel restait
+   vide sur les 414 prospects qui n'en portent aucune, pendant que les trois
+   cellules tronquaient leur sous-titre. Les proportions rendent à chacune ce
+   que sa phrase demande, sans qu'aucune ne perde son rang. */
+.crm-strip {
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+}
+
+.crm-lead {
+  padding: 13px 18px;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid color-mix(in srgb, var(--tone) 42%, transparent);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--tone) 18%, transparent), color-mix(in srgb, var(--tone) 5%, transparent)),
+    var(--crm-card);
+  box-shadow: 0 12px 30px -22px color-mix(in srgb, var(--tone) 90%, transparent), var(--crm-lift);
+}
+
+.crm-lead .crm-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 46%, transparent);
+  color: color-mix(in srgb, var(--tone) 86%, #fff);
+}
+
+.crm-lead .k {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--crm-text-3);
+}
+
+.crm-lead .v {
+  font-size: 17px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  color: var(--crm-text);
+}
+
+.crm-lead .s {
+  font-size: 12px;
+  color: var(--crm-text-3);
+}
+
+.crm-strip-cell {
+  padding: 11px 15px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-lift);
+  gap: 2px;
+}
+
+.crm-strip-cell .k {
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+}
+
+.crm-strip-cell .v {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.crm-strip-cell .s {
+  font-size: 11.5px;
+}
+
+/* Les onglets deviennent un contrôle segmenté : une rangée de mots soulignés
+   ne se lisait pas comme quelque chose qu'on peut presser. */
+.crm-tabs {
+  gap: 4px;
+  padding: 12px 28px 0;
+  border-bottom: 1px solid var(--crm-line);
+}
+
+.crm-tab {
+  height: 40px;
+  padding: 0 15px;
+  gap: 8px;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  font-size: 14px;
+  font-weight: 570;
+  color: var(--crm-text-2);
+  position: relative;
+  top: 1px;
+  transition: background 110ms ease, color 110ms ease;
+}
+
+.crm-tab svg {
+  color: var(--crm-text-3);
+}
+
+.crm-tab:hover {
+  background: var(--crm-card);
+  color: var(--crm-text);
+}
+
+.crm-tab[aria-selected='true'] {
+  background: var(--crm-sheen), var(--crm-card);
+  border-color: var(--crm-line);
+  color: #fff;
+  font-weight: 660;
+  box-shadow: 0 -3px 0 0 var(--crm-violet-strong) inset, var(--crm-lift);
+}
+
+.crm-tab[aria-selected='true'] svg {
+  color: #c4b5fd;
+}
+
+.crm-panel {
+  padding: 18px 28px 24px;
+}
+
+.crm-panel[data-tab='overview'] {
+  padding-bottom: 18px;
+}
+
+.crm-panes {
+  gap: 14px;
+}
+
+.crm-pane {
+  gap: 12px;
+}
+
+.crm-tablink {
+  margin-top: 11px;
+  font-size: 13px;
+  font-weight: 620;
+  color: #a78bfa;
+}
+
+.crm-counts .c {
+  padding: 8px 12px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+}
+
+.crm-counts .n {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.crm-counts .l {
+  font-size: 11.5px;
+}
+
+/* La liste des canaux ABSORBE la hauteur restante de la carte, et ne défile
+   plus.
+   -------------------------------------------------------------------------
+
+   Elle défilait parce qu'elle partageait sa colonne avec un résumé de preuves :
+   cinq canaux demandaient 240 px, la carte en offrait 190, donc deux d'entre
+   eux vivaient derrière un défilement interne. Un canal caché est un canal
+   qu'on croit ABSENT — le contresens exact que « non observé » sert à éviter.
+
+   La colonne entière lui revenant, la borne disparaît. L'espace rendu ne
+   devient pas un blanc sous la dernière ligne : ce sont les lignes elles-mêmes
+   qui grandissent, jusqu'à un plafond — sans lui, cinq canaux étirés sur une
+   colonne vide donneraient des boîtes de cent pixels pour une adresse e-mail,
+   ce qui est l'autre façon d'avoir l'air en panne. Ce qui reste au-delà du
+   plafond retourne à la carte, dont la note de provenance reste collée aux
+   canaux (`justify-content` du parent inchangé).
+
+   `overflow: hidden` est une SÉCURITÉ, pas un masquage : le plancher de
+   `min-height` garantit qu'il n'a rien à couper, et la porte
+   `crm:overview-gate` le vérifie à trois largeurs. */
+.crm-channels.roomy {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.crm-channels.roomy .crm-channel {
+  flex: 1 1 auto;
+  /* Le plancher est la hauteur NATURELLE d'une ligne de canal — deux lignes de
+     texte et leur rembourrage. En dessous, la valeur commencerait à être
+     rognée. */
+  min-height: 44px;
+  max-height: 62px;
+}
+
+/* Les faits d'identité : QUATRE, en grille de deux.
+   -------------------------------------------------------------------------
+
+   Ils étaient trois sur une seule rangée, à 10 px de libellé, parce que la
+   carte devait ensuite trouver 190 px pour ses canaux. La localisation les
+   rejoint — elle vit dans l'en-tête, mais l'en-tête n'est pas le module qui
+   répond à « qui c'est, et par où on l'atteint ». Deux colonnes plutôt que
+   quatre : sur une colonne de ~400 px, quatre cases donnent 90 px chacune,
+   c'est-à-dire une raison sociale réduite à « Wash In… ». */
+.crm-kv.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.crm-kv.facts .r {
+  display: block;
+  padding: 8px 11px;
+  border-radius: var(--crm-r-sm);
+  border: 1px solid var(--crm-line);
+  background: rgb(255 255 255 / 2.5%);
+  min-width: 0;
+}
+
+.crm-kv.facts dt {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--crm-text-3);
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-kv.facts dd {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sous 830 px de FENÊTRE, la carte se resserre — elle ne se tronque pas.
+   -------------------------------------------------------------------------
+
+   La colonne offre 280 px de canaux sur un écran de 850 px de haut, 210 sur un
+   écran de 780. La version confortable demande 252 : sur le petit écran, les
+   deux derniers canaux étaient donc COUPÉS — le défaut qu'on venait de fermer,
+   revenu par la fenêtre.
+
+   Ce qui rend les 40 px manquants n'est aucune donnée : deux pixels de
+   rembourrage sur chaque case d'identité, deux sur chaque canal, et trois
+   pixels de pastille. Les quatre faits et les cinq canaux restent tous là,
+   au-dessus du seuil de lisibilité (la plus petite valeur reste à 13,5 px). */
+@media (max-height: 830px) {
+  .crm-kv.facts {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .crm-kv.facts .r {
+    padding: 6px 10px;
+  }
+
+  .crm-channels.roomy {
+    gap: 6px;
+  }
+
+  .crm-channels.roomy .crm-channel {
+    min-height: 36px;
+    max-height: 54px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .crm-channels.roomy .crm-channel .crm-ic {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.crm-card .crm-prose.crm-note {
+  font-size: 11.8px;
+  line-height: 1.5;
+}
+
+/* Le canal passe sur UNE ligne : libellé et valeur côte à côte plutôt que
+   l'un sous l'autre. Empilés, cinq canaux mesuraient 345 px pour une carte qui
+   en offre 300 — donc trois d'entre eux étaient coupés en permanence, sur la
+   carte dont le rôle est précisément de dire par où joindre quelqu'un. Sur une
+   ligne, les cinq tiennent. Aucune valeur n'est retirée. */
+.crm-channel {
+  padding: 6px 12px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+  gap: 11px;
+  transition: border-color 110ms ease, background 110ms ease;
+}
+
+.crm-channel:hover {
+  border-color: var(--crm-line-strong);
+  background: var(--crm-card-3);
+}
+
+.crm-channel .crm-ic {
+  width: 27px;
+  height: 27px;
+  border-radius: 9px;
+}
+
+.crm-channel .t {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.crm-channel .t b {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 68px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+}
+
+.crm-channel .t span,
+.crm-channel .t a {
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.crm-kv dt {
+  font-size: 12.8px;
+}
+
+.crm-kv dd {
+  font-size: 13.5px;
+}
+
+.crm-signal .l {
+  font-size: 13.2px;
+}
+
+.crm-signal .d {
+  font-size: 12.5px;
+}
+
+.crm-score-head .b {
+  font-size: 17px;
+  font-weight: 680;
+}
+
+.crm-score-head .s {
+  font-size: 12.5px;
+}
+
+.crm-ring {
+  width: 62px;
+  height: 62px;
+}
+
+.crm-ring b {
+  font-size: 18px;
+}
+
+.crm-prose {
+  font-size: 13.4px;
+}
+
+.crm-list li {
+  font-size: 13.4px;
+}
+
+.crm-empty {
+  padding: 26px 20px;
+  border-radius: var(--crm-r-lg);
+}
+
+.crm-empty b {
+  font-size: 15px;
+}
+
+.crm-empty p {
+  font-size: 13px;
+}
+
+/* Un état vide DANS une carte extensible se centre au lieu de coller en haut :
+   le vide sous un message d'absence est ce qui faisait dire « écran cassé ». */
+.crm-card-fill .crm-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-style: dashed;
+}
+
+/* --------------------------------------------------------------------------
+   Pipeline
+   -------------------------------------------------------------------------- */
+
+/* La zone de distribution : trois nombres, une barre empilée, une légende.
+   Tout y est un `length` de tableau — aucune part n'est estimée. */
+.crm-funnel {
+  display: grid;
+  grid-template-columns: minmax(0, 372px) minmax(0, 1fr);
+  gap: 20px;
+  padding: 18px 20px;
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+}
+
+@media (max-width: 1100px) {
+  .crm-funnel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.crm-funnel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crm-funnel-stat {
+  padding: 11px 13px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+}
+
+.crm-funnel-stat .n {
+  display: block;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-funnel-stat .l {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--crm-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-funnel-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.crm-funnel-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.crm-funnel-bar {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--crm-card-2);
+  border: 1px solid var(--crm-line);
+  box-shadow: var(--crm-lift);
+}
+
+.crm-funnel-bar > i {
+  display: block;
+  min-width: 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 92%, #fff), var(--tone));
+  border-right: 1px solid rgb(9 11 19 / 55%);
+}
+
+.crm-funnel-bar > i:last-child {
+  border-right: 0;
+}
+
+.crm-funnel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 9px;
+}
+
+.crm-funnel-legend a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+  font-size: 12.5px;
+  color: var(--crm-text-2);
+  text-decoration: none;
+  transition: background 110ms ease, border-color 110ms ease, color 110ms ease, transform 110ms ease;
+}
+
+.crm-funnel-legend a:hover {
+  background: var(--tone-soft);
+  border-color: var(--tone-line);
+  color: var(--tone);
+  transform: translateY(-1px);
+}
+
+.crm-funnel-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--tone);
+}
+
+.crm-funnel-legend b {
+  font-weight: 680;
+  color: var(--crm-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-funnel-legend .p {
+  color: var(--crm-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-lane {
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-sheen), var(--crm-card);
+  box-shadow: var(--crm-shadow), var(--crm-lift);
+  padding: 14px 13px 13px;
+}
+
+.crm-lane-head .t > span:first-child {
+  font-size: 14.5px;
+  font-weight: 660;
+  letter-spacing: -0.015em;
+  color: var(--crm-text);
+}
+
+.crm-lane-head .n {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+}
+
+.crm-lane-head .rule {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--crm-text-3);
+}
+
+.crm-pcard {
+  padding: 12px 13px;
+  border-radius: var(--crm-r-md);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+  transition: transform 110ms ease, border-color 110ms ease, background 110ms ease;
+}
+
+.crm-pcard:hover {
+  transform: translateY(-2px);
+  background: var(--crm-card-3);
+  border-color: var(--tone-line);
+  box-shadow: var(--crm-shadow);
+}
+
+.crm-pcard .name {
+  font-size: 13.8px;
+  font-weight: 620;
+}
+
+.crm-pcard .meta {
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.crm-lane-fold {
+  border-radius: var(--crm-r-lg);
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card);
+  box-shadow: var(--crm-lift);
+  padding: 13px 15px;
+}
+
+.crm-lane-fold-head {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.crm-lane-fold li a {
+  font-size: 12.5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--crm-line);
+  background: var(--crm-card-2);
+}
+
+/* --------------------------------------------------------------------------
+   Inbox et alertes — un fil, pas une suite de lignes
+   -------------------------------------------------------------------------- */
+
+/* La rangée de groupe. Elle n'ajoute AUCUNE donnée : elle dit que les lignes
+   qui suivent appartiennent au même correspondant, ce que vingt-trois lignes
+   répétant le même nom disaient beaucoup plus mal. */
+.crm-grouprow td {
+  padding: 0;
+  border-bottom: 1px solid var(--crm-line-strong);
+  background: linear-gradient(180deg, #1b2131, #171c2a);
+}
+
+.crm-grouphead {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 18px;
+}
+
+.crm-grouphead .nm {
+  font-size: 14px;
+  font-weight: 660;
+  letter-spacing: -0.012em;
+  color: var(--crm-text);
+  text-decoration: none;
+}
+
+.crm-grouphead a.nm:hover {
+  color: #c4b5fd;
+}
+
+.crm-grouphead .mt {
+  font-size: 12px;
+  color: var(--crm-text-3);
+}
+
+.crm-grouphead .ct {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ce qui est TRAITÉ recule ; ce qui attend garde son plein contraste.
+   L'inverse — une barre de couleur sur chaque ligne en attente — a été essayé
+   et mesuré : sur vingt-trois réponses dont vingt et une attendent, la barre
+   devenait le décor de la page et ne signalait plus rien. Ce qui distingue,
+   c'est le RETRAIT de ce qui n'attend plus. */
+.crm-table tbody tr[data-wait='no'] td {
+  color: var(--crm-text-3);
+}
+
+.crm-table tbody tr[data-wait='no'] .crm-quote-line {
+  color: var(--crm-text-3);
+}
+
+.crm-table tbody tr[data-wait='no'] td:first-child {
+  opacity: 0.72;
+}
+
+.crm-table tbody tr[data-sev='high'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--crm-red);
+}
+
+.crm-table tbody tr[data-sev='medium'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--crm-orange);
+}
+
+.crm-table tbody tr[data-sev='low'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--crm-slate);
+}
+
+.crm-quote-line {
+  font-size: 13.6px;
+  color: var(--crm-text);
+}
+
+.crm-raw {
+  font-size: 11.5px;
+}
+
+/* --------------------------------------------------------------------------
+   Focus — visible partout, jamais discret
+   -------------------------------------------------------------------------- */
+
+.crm a:focus-visible,
+.crm button:focus-visible,
+.crm summary:focus-visible,
+.crm input:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Barres de défilement — présentes, discrètes, jamais absentes
+   -------------------------------------------------------------------------- */
+
+.crm-scroll::-webkit-scrollbar,
+.crm-panel::-webkit-scrollbar,
+.crm-lane-body::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.crm-scroll::-webkit-scrollbar-thumb,
+.crm-panel::-webkit-scrollbar-thumb,
+.crm-lane-body::-webkit-scrollbar-thumb {
+  background: var(--crm-card-3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.crm-scroll:hover::-webkit-scrollbar-thumb,
+.crm-panel:hover::-webkit-scrollbar-thumb,
+.crm-lane-body:hover::-webkit-scrollbar-thumb {
+  background: var(--crm-line-strong);
+  background-clip: padding-box;
+}
+
+/* Une anomalie de corrélation, devant le texte du message : une étiquette
+   pleine, pas un mot en gras. En gras seul, « Probable » se lisait comme le
+   premier mot de la phrase reçue — c'est-à-dire comme une donnée du prospect
+   au lieu d'un doute de la machine. */
+.crm-quote-line .crm-flag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  background: var(--tone-soft);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+}
+
+/* Une colonne vide était bornée à 150 px — assez pour « Ont répondu » à 12 px,
+   plus assez à 14,5. Le libellé passait à la ligne et la colonne prenait l'air
+   d'un accident. 178 px la rendent lisible sans lui donner le poids d'une
+   colonne peuplée : elle reste en pointillés, transparente, et sans règle. */
+.crm-lane.is-empty {
+  flex: 0 1 178px;
+  min-width: 178px;
+}
+
+.crm-lane.is-empty .crm-lane-head {
+  border-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Preuves — deux colonnes
+   -------------------------------------------------------------------------- */
+
+.crm-evidence {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .crm-evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.crm-evidence-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* La colonne du DOSSIER suit le défilement de la PREUVE.
+   Dix-huit observations font une colonne de gauche de mille cinq cents pixels,
+   contre cinq cents à droite : sans cela, on fait défiler le texte et le
+   dossier disparaît, en laissant exactement le vide qu'on venait de fermer. */
+@media (min-width: 1181px) {
+  .crm-evidence-col:last-child {
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   La vue d'ensemble, resserrée d'un cran — et seulement elle
+   --------------------------------------------------------------------------
+
+   Le corps de texte du CRM est passé de 13,5 à 14,5 px, ce qui a rendu la
+   colonne de droite trop haute de 2 à 9 px sur une fenêtre de 1 440 × 780 —
+   mesuré par `crm:overview-gate`, sur vingt et une fiches réelles. Un
+   dépassement de deux pixels n'est pas cosmétique ici : le panneau est en
+   `overflow: hidden`, donc ce qui dépasse est COUPÉ, et c'est la dernière
+   carte de la colonne — l'opportunité — qui l'était.
+
+   Les huit pixels sont repris sur le RESPIRATION des cartes, pas sur leur
+   contenu, et uniquement dans ce panneau : les quatre autres onglets défilent
+   et gardent leur aération. */
+.crm-panel[data-tab='overview'] .crm-card {
+  padding: 13px 16px;
+}
+
+.crm-panel[data-tab='overview'] .crm-card-head {
+  margin-bottom: 10px;
+  padding-bottom: 9px;
+}
+
+.crm-panel[data-tab='overview'] .crm-pane {
+  gap: 10px;
+}
+
+/* Le plancher d'une carte extensible suit le même resserrement : à 118 px il
+   forçait la colonne à dépasser avant même que la carte n'ait de contenu. */
+.crm-card-fill {
+  min-height: 104px;
+}
+
+/* --------------------------------------------------------------------------
+   Sous 1 300 px — la table se resserre plutôt que de tronquer
+   --------------------------------------------------------------------------
+
+   Neuf colonnes en largeurs proportionnelles : sous 1 300 px, chacune reçoit
+   moins de caractères qu'il n'en faut, et le tableau se met à afficher des
+   ellipses partout — « Qu… », « E… », « LOCA… ». Aucune colonne n'est retirée
+   (l'information disparaîtrait), et la page ne défile pas non plus en largeur
+   (elle deviendrait inutilisable au clavier). Ce sont le rail, les marges et
+   le rembourrage qui rendent les pixels : environ 90 px repris sur du vide. */
+@media (max-width: 1300px) {
+  .crm {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .crm-head,
+  .crm-body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .crm-table td,
+  .crm-table thead th {
+    padding-left: 9px;
+    padding-right: 9px;
+    font-size: 13.2px;
+  }
+
+  .crm-table thead th {
+    font-size: 10.5px;
+    letter-spacing: 0.03em;
+  }
+
+  .crm-table td:first-child,
+  .crm-table thead th:first-child {
+    padding-left: 14px;
+  }
+
+  .crm-table td:last-child,
+  .crm-table thead th:last-child {
+    padding-right: 14px;
+  }
+
+  .crm-ident {
+    gap: 9px;
+  }
+
+  .crm-search {
+    min-width: 240px;
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "hermes-webintel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hermes Web Intelligence worker — private search / fetch / crawl / render API for hermes. Collects and analyses only; it never sends anything to a prospect.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "browser:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "1.62.1",
+    "tsx": "4.23.11",
+    "undici": "7.29.0"
+  }
+}

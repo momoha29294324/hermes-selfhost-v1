@@ -1,0 +1,45 @@
+# deps
+node_modules/
+
+# next
+.next/
+out/
+next-env.d.ts
+
+# build info
+*.tsbuildinfo
+
+# secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# local database (PGlite data directory) and caches
+var/
+.cache/
+
+# os
+.DS_Store
+
+# logs
+*.log
+logs/
+
+# Claude Code — settings personnels/machine, jamais partagés par Git
+.claude/settings.local.json
+
+# Configuration propre à VOTRE instance.
+#
+# Ces deux fichiers décrivent qui vous êtes et ce que vous vendez. Ils sont
+# ignorés par défaut pour qu'ils ne partent jamais avec une copie du dépôt —
+# ce qui vous arriverait est exactement ce que cette édition évite : recevoir
+# l'identité et l'offre de quelqu'un d'autre. Si vous versionnez votre propre
+# instance dans un dépôt privé, retirez ces deux lignes en connaissance de cause.
+config/operator.json
+config/offer.json
+
+# Profils de navigateur, sessions, cookies — jamais dans Git.
+var/instagram/
+**/auth.json
+*.pem
+*.key

@@ -1,0 +1,52 @@
+{
+  "key": "example-services",
+  "label": "Prestataires de services locaux (exemple)",
+  "language": "fr",
+  "description": "Niche d'EXEMPLE, entièrement synthétique. Elle existe pour que les tests et une première prise en main aient une forme complète à lire — elle ne décrit aucun marché réel et ne doit pas être utilisée telle quelle. Remplacez-la par votre propre métier.",
+  "positiveTerms": ["prestation de services", "services aux entreprises", "atelier", "studio", "artisan"],
+  "adjacentTerms": ["conseil", "formation", "logiciel"],
+  "negativeTerms": ["franchise nationale", "grande surface", "marketplace"],
+  "registryCodes": [],
+  "excludedRegistryCodes": [],
+  "serviceTerms": ["prestation standard", "prestation sur mesure", "intervention sur site"],
+  "premiumTerms": ["prestation premium", "accompagnement dédié"],
+  "commercialQueries": {
+    "core": ["prestataire de services"],
+    "secondary": ["artisan services"],
+    "serviceSpecific": ["prestation sur mesure"],
+    "inScope": ["prestation standard"]
+  },
+  "searchQueries": ["prestataire de services {city}"],
+  "coreActivityTerms": ["prestation de services", "atelier", "studio"],
+  "adjacentActivityFamilies": [
+    {
+      "key": "training",
+      "label": "Formation",
+      "why": "Vendre une formation n'est pas exercer le métier : l'entreprise apprend à d'autres à le faire.",
+      "phrases": ["centre de formation", "former des professionnels"]
+    }
+  ],
+  "coreServiceFit": {
+    "inScopeTerms": ["prestation standard", "intervention sur site"],
+    "specialistFamilies": [
+      {
+        "key": "consulting",
+        "label": "Conseil",
+        "why": "Une mission de conseil ne se livre pas comme une prestation opérationnelle.",
+        "phrases": ["mission de conseil", "audit stratégique"]
+      }
+    ]
+  },
+  "serviceScope": {
+    "inScopeTerms": ["prestation standard", "intervention sur site"],
+    "ambiguousTerms": ["accompagnement"],
+    "outOfScopeFamilies": [
+      {
+        "key": "resale",
+        "label": "Revente de produits",
+        "why": "Vendre des produits est un autre métier que délivrer une prestation.",
+        "phrases": ["boutique en ligne", "vente de produits"]
+      }
+    ]
+  }
+}

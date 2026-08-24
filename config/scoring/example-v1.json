@@ -1,0 +1,15 @@
+{
+  "key": "example-v1",
+  "version": "example-1",
+  "label": "Profil de score d'EXEMPLE — à recalibrer",
+  "note": "Poids ARBITRAIRES et volontairement plats. Ils ne proviennent d'aucune calibration : ils existent pour que la mécanique de score ait une forme valide à lire. Un profil utile se construit sur vos propres observations.",
+  "bands": { "a": 70, "b": 50, "c": 30 },
+  "llmObservationWeight": 5,
+  "signals": [
+    { "key": "website_present",      "label": "Site web observé",            "weight": 10, "onMissing": "zero", "description": "Un site a été atteint et lu." },
+    { "key": "contact_path",         "label": "Moyen de contact observé",    "weight": 10, "onMissing": "zero", "description": "Un formulaire, un téléphone ou un email est visible." },
+    { "key": "offer_legible",        "label": "Offre lisible",               "weight": 10, "onMissing": "zero", "description": "Ce que l'entreprise vend se comprend en une lecture." },
+    { "key": "independent_operator", "label": "Structure indépendante",      "weight": 10, "onMissing": "zero", "description": "Ni franchise, ni enseigne nationale." },
+    { "key": "social_presence",      "label": "Présence sociale observée",   "weight": 10, "onMissing": "zero", "description": "Un compte social actif a été observé." }
+  ]
+}

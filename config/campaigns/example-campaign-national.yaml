@@ -1,0 +1,60 @@
+# Campagne d'EXEMPLE — entièrement synthétique.
+#
+# Elle existe pour montrer la FORME d'une campagne, et pour donner aux tests un
+# fichier valide à charger. Elle ne décrit aucun marché réel, sa géographie est
+# un exemple, et son vocabulaire vient de `config/niches/example-services.json`,
+# lui-même synthétique.
+#
+# Ce qu'elle ne fait PAS, et ne peut pas faire : autoriser un envoi. Une
+# campagne décrit une recherche, jamais une permission. Le premier contact
+# demande une activation distincte, l'auto-réponse aussi, et l'arrêt global
+# reste armé tant que personne ne l'a levé nommément.
+slug: example-campaign-national
+name: Campagne d'exemple — national (revue seulement)
+niche: example-services
+
+geography:
+  mode: national
+  country: FR
+
+discovery:
+  targetProspects: 5
+  commercialWeb:
+    enabled: false
+    provider: webintel
+    tiers: [core]
+    maxTermsPerTier: 1
+    maxQueries: 5
+    resultsPerQuery: 5
+    maxBusinesses: 10
+    maxSitesProbed: 10
+  sources:
+    - provider: sirene
+      enabled: false
+      maxResults: 10
+      options: {}
+
+enrichment:
+  crawlWebsites: false
+  maxPagesPerSite: 1
+  matchOpenStreetMap: false
+  searchForWebsite: false
+
+qualification:
+  useLlm: true
+  keepVerdicts: [in_niche]
+  minConfidence: 0.6
+
+scoring:
+  profile: example-v1
+
+outreach:
+  channel: instagram_dm
+  language: fr
+  maxChars: 650
+  generateVariantB: true
+  reviewOnly: true
+
+limits:
+  maxLlmCalls: 20
+  maxHttpRequests: 100

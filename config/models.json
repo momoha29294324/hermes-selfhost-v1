@@ -1,0 +1,78 @@
+{
+  "version": "1.2.2",
+  "declaredEfforts": ["minimal", "low", "medium", "high", "xhigh", "ultra", "max"],
+  "defaultRoute": {
+    "provider": "codex",
+    "model": "gpt-5.6-sol",
+    "effort": "low",
+    "timeoutMs": 120000,
+    "maxAttempts": 2,
+    "timeoutScheduleMs": [120000, 90000]
+  },
+  "tasks": {
+    "discovery": { "provider": "none", "model": "deterministic", "effort": null },
+    "dedupe": { "provider": "none", "model": "deterministic", "effort": null },
+
+    "classification": { "provider": "codex", "model": "gpt-5.6-sol", "effort": "low", "timeoutMs": 120000 },
+    "scoring": { "provider": "codex", "model": "gpt-5.6-sol", "effort": "low", "timeoutMs": 120000 },
+    "reply": { "provider": "codex", "model": "gpt-5.6-sol", "effort": "low", "timeoutMs": 120000 },
+
+    "research": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 120000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [120000, 90000]
+    },
+    "angle": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 120000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [120000, 90000]
+    },
+    "message": {
+      "provider": "codex",
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "timeoutMs": 120000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [120000, 90000]
+    },
+
+    "worker_funnel": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 90000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [90000, 60000]
+    },
+    "worker_offer": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 90000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [90000, 60000]
+    },
+    "worker_contact": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 90000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [90000, 60000]
+    },
+    "synthesize": {
+      "provider": "codex",
+      "model": "gpt-5.6-terra",
+      "effort": "medium",
+      "timeoutMs": 120000,
+      "maxAttempts": 2,
+      "timeoutScheduleMs": [120000, 90000]
+    }
+  }
+}

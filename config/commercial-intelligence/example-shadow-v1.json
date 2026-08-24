@@ -1,0 +1,105 @@
+{
+  "key": "example-shadow-v1",
+  "version": "example-1",
+  "label": "Priorité commerciale — profil d'EXEMPLE, non calibré",
+  "note": "Tous les poids ci-dessous sont PLATS et arbitraires. Ils ne proviennent d'aucune calibration et ne prétendent pas classer correctement : ils donnent une forme valide à lire. Un profil utile se construit sur vos propres observations et sur vos propres verdicts humains — voir CLAUDE_SETUP.md, étape ICP.",
+  "weights": {
+    "icpFit": {
+      "niche_verdict": 10,
+      "core_activity": 10,
+      "icp_eligibility": 10,
+      "independent_operator": 10
+    },
+    "acquisitionMaturity": {
+      "tracking_stack": 10,
+      "transactional_path": 10,
+      "structured_offer": 10,
+      "conversion_support": 10,
+      "site_quality": 10,
+      "cta_quality": 10,
+      "content_depth": 10,
+      "professional_email": 10,
+      "published_channels": 10
+    },
+    "need": {
+      "no_measurement": 10,
+      "no_booking_path": 10,
+      "no_quote_path": 10,
+      "no_price_visibility": 10,
+      "weak_cta": 10,
+      "no_trust_signals": 10,
+      "thin_site": 10,
+      "phone_only_conversion": 10,
+      "offer_not_legible": 10,
+      "social_channel_gap": 10
+    },
+    "abilityToPay": {
+      "registered_business": 10,
+      "operating_history": 10,
+      "employer_or_company": 10,
+      "basket_size": 10,
+      "commercial_activity": 10
+    },
+    "timing": {
+      "promotional_push": 10
+    }
+  },
+  "confidence": {
+    "high": 0.66,
+    "medium": 0.4
+  },
+  "businessType": {
+    "unresolvedLegalIdentityCredit": 0.5,
+    "unprovenCoreActivityCredit": 0.5,
+    "adjacentWithCoreCredit": 0.5,
+    "adjacentOnlyCredit": 0.5
+  },
+  "priority": {
+    "maturityDrag": 0.5,
+    "fitFloor": 0.5,
+    "abilityFloor": 0.5,
+    "abilityHobbyFloor": 25,
+    "maturityNeutral": 50,
+    "abilityNeutral": 50,
+    "timingBonusMax": 5,
+    "bands": {
+      "prioritize": 60,
+      "consider": 40
+    }
+  },
+  "channels": {
+    "minimumFit": 50,
+    "selectable": [
+      "instagram",
+      "email",
+      "phone"
+    ],
+    "instagram": {
+      "handleObserved": 10,
+      "linkedFromOwnSite": 10,
+      "identityCorroborated": 10,
+      "nicheChannelAffinity": 10,
+      "businessUsesDmPath": 10
+    },
+    "email": {
+      "addressObserved": 10,
+      "ownDomain": 10,
+      "roleMailbox": 10,
+      "publishedOnSite": 10,
+      "writtenPathPreferred": 10,
+      "nicheChannelAffinity": 10
+    },
+    "phone": {
+      "numberObserved": 10,
+      "publishedOnSite": 10,
+      "businessConvertsByPhone": 10,
+      "noWrittenPathAvailable": 10,
+      "nicheChannelAffinity": 10
+    }
+  },
+  "nicheChannelAffinity": {
+    "instagram": 0.5,
+    "email": 0.5,
+    "phone": 0.5
+  }
+}

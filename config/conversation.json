@@ -1,0 +1,16 @@
+{
+  "reply": {
+    "minDelayMs": 90000,
+    "maxDelayMs": 420000,
+    "burstQuietMs": 300000,
+    "minConfidence": 0.85
+  },
+  "followUp": {
+    "maxAttempts": 2,
+    "firstDelayMs": 259200000,
+    "secondDelayMs": 604800000,
+    "notNowDefaultDelayMs": 2592000000,
+    "requestedMinDelayMs": 604800000,
+    "requestedMaxDelayMs": 15552000000
+  }
+}

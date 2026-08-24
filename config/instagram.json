@@ -1,0 +1,52 @@
+{
+  "session": {
+    "profileDir": "var/instagram/profile",
+    "profileLabel": "default",
+    "headless": true,
+    "navigationTimeoutMs": 30000,
+    "failureWindowMs": 3600000,
+    "locale": "fr-FR",
+    "timezoneId": "Europe/Paris"
+  },
+  "caps": {
+    "dailySentCap": 10,
+    "hourlySentCap": 3,
+    "minSendIntervalMs": 900000,
+    "maxConsecutiveFailures": 3,
+    "maxSessionFailures": 3
+  },
+  "queue": {
+    "leaseMs": 300000,
+    "maxJobsPerRun": 5
+  },
+  "schedule": {
+    "timezone": "Europe/Paris",
+    "windows": [
+      {
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "startMinute": 540,
+        "endMinute": 1200
+      }
+    ],
+    "jitterMs": 0,
+    "defaultBackoffMs": 900000
+  },
+  "inbound": {
+    "accountHandle": "UNCONFIGURED",
+    "formerAccountHandles": [],
+    "maxThreadsPerPoll": 10,
+    "leaseMs": 300000,
+    "enabled": false,
+    "pollIntervalMs": 300000,
+    "retryBackoffMs": 600000,
+    "maxBackoffMs": 3600000,
+    "awaitingHumanBackoffMs": 1800000,
+    "downstreamLimit": 50
+  }
+}
