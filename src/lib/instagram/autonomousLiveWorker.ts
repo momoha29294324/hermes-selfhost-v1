@@ -1,10 +1,16 @@
 import type { Sql } from '@/lib/db/sql';
 import type { InstagramRailConfig } from '@/lib/config/schema';
 import { logger } from '@/lib/logging/logger';
+import {
+  assessFirstTouchBudget,
+  countFirstTouchActivationEffects,
+  loadActiveFirstTouchActivation,
+} from '@/lib/instagram/firstTouchActivation';
 import { DispatchBlockedError, resolveDispatchTarget } from '@/lib/pipeline/r6bDispatcher';
 import { loadManifestApprovalProvenance } from '@/lib/pipeline/autonomousApproval';
 import {
   armCanaryAuthorization,
+  isReplaceableCanaryAuthorization,
   CanaryAuthorizationError,
   listCanaryAuthorizations,
   loadCanaryForManifest,
@@ -111,7 +117,18 @@ export type AutonomousRunStop =
   /** Une session dégradée ou un challenge : le rail s'arrête net, comme partout ailleurs. */
   | 'HARD_STOP'
   /** Le plafond d'effets de CETTE exécution. */
-  | 'RUN_CEILING';
+  | 'RUN_CEILING'
+  /**
+   * Aucune activation vivante : le rail est au repos. Ce n'est ni une panne ni
+   * un refus de sûreté — c'est l'état par défaut du dépôt.
+   */
+  | 'NOT_ACTIVATED'
+  /**
+   * Le budget DURABLE du déploiement est épuisé. Contrairement à
+   * `RUN_CEILING`, relancer le processus ne le rouvre pas : le compte est lu
+   * en base depuis la frontière, donc il survit aux cycles et aux redémarrages.
+   */
+  | 'ROLLOUT_BUDGET_EXHAUSTED';
 
 /**
  * HERMES-AUTONOMOUS-R3 §4 — POURQUOI cette exécution s'est arrêtée, dans un
@@ -146,7 +163,9 @@ export type AutonomousStopCode =
   | 'BLOCKED_COOLDOWN'
   | 'BLOCKED_SAFETY'
   | 'HARD_STOP'
-  | 'RUN_CEILING';
+  | 'RUN_CEILING'
+  | 'NOT_ACTIVATED'
+  | 'ROLLOUT_BUDGET_EXHAUSTED';
 
 /**
  * La traduction des refus d'ordonnancement. Partielle et assumée : les motifs
@@ -340,6 +359,45 @@ export async function runAutonomousLiveWorker(
       break;
     }
 
+    // L'arrêt global passe DEVANT le budget, délibérément : c'est le seul
+    // refus qu'un humain lève à la main, et un opérateur qui vient de l'armer
+    // doit le lire en premier. Les deux refusent avant tout effet, donc
+    // l'ordre ne change rien à la sûreté — seulement à ce qu'on comprend.
+    // ---- Le budget DURABLE du déploiement, relu à CHAQUE tour -------------
+    //
+    // Relu et non mémorisé, pour la même raison que l'arrêt global juste en
+    // dessous — mais la conséquence est plus forte ici : le compte est lu en
+    // BASE depuis la frontière, donc il ne repart pas à zéro quand le
+    // processus redémarre. C'est ce qui fait de `max_effects = 3` trois effets
+    // AU TOTAL, à travers les cycles et les redémarrages, là où
+    // `--max-effects` n'en bornait qu'une itération.
+    //
+    // Un aperçu n'est pas un déploiement : `previewOnly` ne produit aucun
+    // effet, donc rien à borner, et exiger une activation pour prévisualiser
+    // rendrait l'inspection plus difficile que l'envoi.
+    if (!input.previewOnly) {
+      const activation = await loadActiveFirstTouchActivation(sql);
+      if (activation === null) {
+        stop = 'NOT_ACTIVATED';
+        stopCode = 'NOT_ACTIVATED';
+        stopDetail =
+          'aucune activation vivante — le rail de premier contact est au repos ; ' +
+          'l’armer est un geste nommé (npm run ig:autonomous:activation -- --activate)';
+        break;
+      }
+      const budget = assessFirstTouchBudget(
+        activation,
+        await countFirstTouchActivationEffects(sql, activation),
+      );
+      if (!budget.open) {
+        stop = 'ROLLOUT_BUDGET_EXHAUSTED';
+        stopCode = 'ROLLOUT_BUDGET_EXHAUSTED';
+        stopDetail = budget.detail;
+        break;
+      }
+    }
+
+
     const scheduleSnapshot = await loadScheduleSnapshot(sql, config);
     // `killSwitch` reste à son défaut `'enforce'` : la posture stricte est
     // celle du chemin LIVE, et le mode autonome n'est pas une raison de la
@@ -508,7 +566,12 @@ async function processOne(
   // revalidé — aucune valeur d'identité ne transite par ce module.
   try {
     const existing = await loadCanaryForManifest(sql, row.manifestId);
-    if (existing === null) {
+    // Une autorisation MORTE et jamais consommée ne condamne pas le manifeste.
+    // Voir `isReplaceableCanaryAuthorization` : sans cette clause, tout cycle
+    // qui armait sans consommer — un `--preview`, par construction — rendait le
+    // manifeste inenvoyable pour toujours. Une autorisation CONSUMED, elle,
+    // n'est jamais remplacée : un effet a eu lieu.
+    if (existing === null || isReplaceableCanaryAuthorization(existing)) {
       const { envelope } = await resolveDispatchTarget(sql, row.manifestId, 'LIVE');
       await armCanaryAuthorization(sql, {
         envelope,

@@ -81,6 +81,7 @@
     "ig:adjudicate": "tsx src/cli/ig-adjudicate.ts",
     "ig:autonomous": "tsx src/cli/ig-autonomous.ts",
     "ig:autonomous:worker": "tsx src/cli/ig-autonomous-worker.ts",
+    "ig:autonomous:activation": "tsx src/cli/ig-autonomous-activation.ts",
     "ig:identity": "tsx src/cli/ig-identity.ts",
     "ig:inbound:status": "tsx src/cli/ig-inbound-status.ts",
     "ig:inbound:poll": "tsx src/cli/ig-inbound-poll.ts",

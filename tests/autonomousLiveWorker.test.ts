@@ -25,6 +25,7 @@ import {
 import { resolveDispatchTarget } from '@/lib/pipeline/r6bDispatcher';
 import { loadSafetySnapshot, setKillSwitch } from '@/lib/instagram/safety';
 import { AUTONOMOUS_POLICY_VERSION } from '@/lib/instagram/autonomousPolicy';
+import { activateFirstTouch } from '@/lib/instagram/firstTouchActivation';
 import { AUTONOMOUS_RAIL_ACTOR, runAutonomousDispatch } from '@/lib/instagram/autonomousDispatch';
 import {
   AUTONOMOUS_MAX_IDLE_MS,
@@ -135,6 +136,22 @@ beforeEach(async () => {
   await sql.query('delete from r6b_batches');
   await sql.query('delete from prospect_evidence');
   await sql.query('delete from prospects');
+  await sql.query('delete from hermes_firsttouch_activations');
+
+  /**
+   * Le rail de premier contact est désormais au REPOS tant qu'aucune
+   * activation ne vit (HERMES-FIRST-TOUCH-BOUNDED-ACTIVATION-R1). Les
+   * scénarios de ce fichier portent sur les portes qui suivent — plafonds,
+   * fenêtre, identité, idempotence — et non sur l'armement lui-même ; ils
+   * partent donc d'un budget ouvert et sans borne. Le budget a son propre
+   * fichier de tests, où il est la chose mesurée.
+   */
+  await activateFirstTouch(sql, {
+    activatedBy: 'test',
+    reason: 'scénarios de rail — le budget est mesuré ailleurs',
+    policyVersion: AUTONOMOUS_POLICY_VERSION,
+    maxEffects: null,
+  });
 });
 
 // ---------------------------------------------------------------------------

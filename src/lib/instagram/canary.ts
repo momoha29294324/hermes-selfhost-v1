@@ -381,6 +381,36 @@ export type CanaryVerdict =
  * problème est une expiration (réarmer suffirait) ou une dérive de payload (le
  * message n'est plus celui qu'on a relu).
  */
+/**
+ * Cette autorisation morte peut-elle être REMPLACÉE par une neuve ?
+ *
+ * Le défaut qu'elle répare, mesuré le 25 août 2026 : le rail autonome n'armait
+ * une autorisation que lorsqu'il n'en existait AUCUNE pour le manifeste
+ * (`existing === null`), et il révoque la sienne à la fin de chaque processus
+ * — « une autorisation d'effet ne survit pas au processus qui l'a armée ».
+ * Toute exécution qui armait sans consommer laissait donc une ligne `REVOKED`
+ * que rien ne remplaçait jamais, et le manifeste devenait définitivement
+ * inenvoyable. `--preview` fait exactement cela par construction : il arme,
+ * il ne clique pas, il révoque en sortant. Prévisualiser un manifeste le
+ * détruisait.
+ *
+ * La ligne qui compte est la troisième, et elle est une SÛRETÉ, pas une
+ * commodité : une autorisation CONSUMED n'est jamais remplaçable. Un effet a
+ * eu lieu, et réarmer reviendrait à autoriser un second message vers un
+ * prospect dont l'unique autorisation est déjà dépensée. `EXPIRED` et
+ * `REVOKED` ne disent rien de tel — elles disent qu'une fenêtre s'est
+ * refermée sans que personne ne soit joint.
+ *
+ * Fail-closed sur le compteur : le moindre essai déjà consommé, ou un compteur
+ * illisible, referme. Ne pas savoir n'est pas une permission.
+ */
+export function isReplaceableCanaryAuthorization(auth: CanaryAuthorization): boolean {
+  if (auth.state !== 'REVOKED' && auth.state !== 'EXPIRED') return false;
+  if (auth.consumedAt !== null) return false;
+  if (!Number.isInteger(auth.externalAttemptsUsed)) return false;
+  return auth.externalAttemptsUsed === 0;
+}
+
 export function checkCanaryAuthorization(input: CanaryCheckInput): CanaryVerdict {
   const auth = input.authorization;
   if (auth === null) {
