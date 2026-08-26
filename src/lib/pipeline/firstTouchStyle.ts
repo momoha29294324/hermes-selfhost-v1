@@ -1,6 +1,7 @@
 import { containsForcedSlang, containsTextism } from '@/lib/conversation/naturalness';
 import { countAddressMarkers, countEmojis, countSentences, countWords } from '@/lib/conversation/style';
 import { normalizeForMatching } from '@/lib/conversation/text';
+import { detectBuyerRole, type BuyerRoleFinding } from '@/lib/pipeline/firstTouchSenderRole';
 import { stripAccents } from '@/lib/identity/normalize';
 
 /**
@@ -148,7 +149,29 @@ export type FirstTouchCode =
   /** Prétend avoir observé quelque chose qui n'est dans aucun fait vérifié (§19). */
   | 'UNGROUNDED_OBSERVATION'
   /** Plus d'une observation : la personnalisation doit rester légère (§19). */
-  | 'OVER_PERSONALIZED';
+  | 'OVER_PERSONALIZED'
+  /**
+   * La QUESTION ferait passer l'expéditeur pour un client potentiel
+   * (SENDER-ROLE-R1) : couverture, prérequis, éligibilité, prix, créneau,
+   * déroulé d'intervention.
+   */
+  | 'BUYER_ROLE_QUESTION'
+  /**
+   * Le MESSAGE pose l'expéditeur en acheteur, sans même qu'une question s'en
+   * charge : son véhicule, son domicile, son intention d'acheter.
+   */
+  | 'BUYER_ROLE_INTENT'
+  /**
+   * Une accroche ancrée existait et le message ne s'en sert pas
+   * (PERSONALIZATION-FLOOR-R1). Ce n'est pas une faute de style : c'est un
+   * message générique envoyé à quelqu'un dont on avait observé quelque chose.
+   */
+  | 'MISSING_GROUNDED_HOOK'
+  /**
+   * Le message reprend bien une observation, mais ne cite aucune ligne de
+   * preuve : le texte reste vrai et le dépôt ne sait plus dire sur quoi.
+   */
+  | 'HOOK_NOT_CITED';
 
 export type FirstTouchSeverity = 'BLOCKING' | 'WARNING';
 
@@ -186,6 +209,56 @@ export interface FirstTouchInput {
    * demande quand rien n'a été observé.
    */
   readonly groundedFacts: readonly string[];
+  /**
+   * L'accroche ANCRÉE que le prompt a réellement montrée, s'il y en avait une.
+   *
+   * -------------------------------------------------------------------------
+   * HERMES-FIRST-TOUCH-PERSONALIZATION-FLOOR-R1 — le plancher
+   * -------------------------------------------------------------------------
+   * Le rejeu du round précédent a montré que **5 candidats sur 18** repartaient
+   * en générique — « simple curiosité : qu'est-ce qui vous a donné envie de
+   * lancer WASH LH ? » — alors qu'une observation ancrée leur avait été donnée,
+   * avec ses identifiants de preuve. Rien ne le refusait : `checkFirstTouch`
+   * n'exige une observation nulle part, et c'est VOULU — un message
+   * volontairement générique est licite quand rien n'a été observé.
+   *
+   * Ce champ dit la seule chose qui manquait : *quelque chose AVAIT été
+   * observé*. Il ne dit pas quoi. Aucune liste blanche sémantique n'est
+   * introduite : l'ancrage se juge exactement comme avant, par
+   * `observationClaims` contre `groundedFacts`.
+   *
+   * Absent — le défaut — reproduit le comportement d'avant ce round au
+   * caractère près : sans accroche annoncée, rien n'est exigé.
+   */
+  readonly hook?: FirstTouchHookState | null;
+  /**
+   * Le vocabulaire du MÉTIER, déclaré par l'opérateur dans sa niche.
+   *
+   * Il ne sert QU'au plancher de personnalisation, pour distinguer « ce
+   * message reprend quelque chose qu'on a observé sur CETTE entreprise » de
+   * « ce message nomme le métier de toute la cible ». Absent, le plancher
+   * reste actif et simplement plus lâche — voir `floorHollowWords`.
+   */
+  readonly tradeTerms?: readonly string[];
+}
+
+/** Ce que le prompt a montré, et ce que le modèle en a cité. */
+export interface FirstTouchHookState {
+  /**
+   * Une accroche portée par AU MOINS une ligne `prospect_evidence` existait.
+   *
+   * Une accroche venue de `prospect_angles` ne compte pas : elle ne porte
+   * aucun identifiant, c'est un raisonnement et non une observation, et le
+   * dépôt refuse depuis FIRST-TOUCH-NATURALNESS-TUNE-R1 qu'elle ancre quoi que
+   * ce soit.
+   */
+  readonly available: boolean;
+  /**
+   * Les identifiants de preuve que le modèle a cités ET qui figuraient dans la
+   * liste blanche. Déjà filtrés par l'appelant : un identifiant inventé n'est
+   * jamais arrivé jusqu'ici.
+   */
+  readonly citedEvidenceIds: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +481,91 @@ function contentWords(text: string): Set<string> {
     .split(' ')
     .filter((word) => word.length >= 5 && !HOLLOW_WORDS.has(word));
   return new Set(words);
+}
+
+/**
+ * Les mots que le PLANCHER de personnalisation ne compte pas.
+ *
+ * `HOLLOW_WORDS` plus le vocabulaire du MÉTIER. Le nom d'un métier décrit
+ * l'activité de TOUTE la cible : le partager avec une ligne de preuve ne
+ * prouve pas qu'on a regardé cette entreprise-là. C'est le même raisonnement
+ * que `GENERIC_SERVICE_TERMS` (`firstTouchPersonalization.ts`), et c'est
+ * mesuré : sans cette liste, « qu'est-ce qui vous a donné envie de vous lancer
+ * dans ce métier ? » — un message parfaitement générique — satisfait le
+ * plancher grâce au seul nom du métier.
+ *
+ * ---------------------------------------------------------------------------
+ * Le vocabulaire du métier n'est PAS écrit ici
+ * ---------------------------------------------------------------------------
+ * Hermes ne sait rien d'un métier tant qu'un opérateur ne le lui a pas déclaré
+ * (`AGENTS.md` : « aucun vocabulaire de niche en dur »). Les termes viennent
+ * donc de `config/niches/<votre-niche>.json` — `serviceTerms` et
+ * `coreActivityTerms` — et l'appelant les passe.
+ *
+ * Sans eux, le plancher retombe sur `HOLLOW_WORDS` seul : il exige toujours un
+ * mot PARTAGÉ avec un fait vérifié, mais il ne peut pas savoir lequel de ces
+ * mots est le nom du métier. C'est une borne plus LÂCHE, pas une borne
+ * absente — et la façon de la resserrer est de décrire sa niche, ce qui est
+ * exactement ce que cette édition demande partout ailleurs.
+ *
+ * Cette liste est PROPRE au plancher. `HOLLOW_WORDS` n'est pas touché :
+ * l'élargir déplacerait la frontière d'`observationClaims`, dont la régression
+ * est gelée forme par forme depuis FIRST-TOUCH-NATURALNESS-TUNE-R1.
+ */
+function floorHollowWords(tradeTerms: readonly string[]): ReadonlySet<string> {
+  const words = new Set(HOLLOW_WORDS);
+  for (const term of tradeTerms) {
+    for (const word of stripAccents(term).toLowerCase().replace(/[^a-z0-9]+/g, ' ').split(' ')) {
+      // Le seuil de `contentWords` : en dessous, le mot ne compte de toute
+      // façon pas, et l'ajouter ne dirait rien.
+      if (word.length >= 5) words.add(word);
+    }
+  }
+  return words;
+}
+
+/**
+ * Les mots distinctifs que le message PARTAGE avec les faits vérifiés.
+ *
+ * ---------------------------------------------------------------------------
+ * Pourquoi ce n'est pas `observationClaims`
+ * ---------------------------------------------------------------------------
+ * Le plancher a d'abord été bâti dessus, et il rendait CINQ faux refus sur 24
+ * au premier rejeu. La raison est structurelle : `observationClaims` reconnaît
+ * un jeu ÉTROIT de tournures d'ouverture (« j'ai vu que », « je suis tombé
+ * sur »), et cette étroitesse est voulue — pour DÉTECTER une prétention à
+ * sourcer, en rater une est sans danger.
+ *
+ * Le plancher inverse ce sens de lecture : il demande « une observation
+ * a-t-elle été reprise ? », et là une tournure ratée devient un refus. « J'ai vu
+ * SUR VOTRE SITE que vous travaillez avec les particuliers » et « votre site
+ * mentionne des prestations pour les particuliers » reprennent l'observation
+ * mot pour mot et ne portent aucune tournure connue.
+ *
+ * Le signal juste est donc le VOCABULAIRE PARTAGÉ, indépendant de la façon dont
+ * la phrase s'ouvre — exactement ce que `personalizationLevel`
+ * (`guardrails.ts`) mesure depuis toujours pour dire à quel point un message
+ * est bâti sur ce qu'on a observé. Ici on n'a besoin que de la question la plus
+ * simple : partage-t-il au moins UN mot ?
+ *
+ * Exportée pour qu'un test montre CE QUI a été reconnu plutôt que de le déduire
+ * d'un verdict.
+ */
+export function sharedGroundedWords(
+  body: string,
+  groundedFacts: readonly string[],
+  tradeTerms: readonly string[] = [],
+): readonly string[] {
+  const hollow = floorHollowWords(tradeTerms);
+  const inBody = new Set([...contentWords(body)].filter((word) => !hollow.has(word)));
+  const shared = new Set<string>();
+  for (const fact of groundedFacts) {
+    for (const word of contentWords(fact)) {
+      if (hollow.has(word)) continue;
+      if (inBody.has(word)) shared.add(word);
+    }
+  }
+  return Object.freeze([...shared]);
 }
 
 export interface ObservationClaim {
@@ -674,6 +832,53 @@ export function checkFirstTouch(input: FirstTouchInput): FirstTouchReport {
     );
   }
 
+  // --- le PLANCHER de personnalisation (FLOOR-R1) ------------------------
+  //
+  // Deux constats, et ils ne disent pas la même chose. Le premier dit « ce
+  // message est générique alors qu'on avait quelque chose à dire » ; le second
+  // dit « ce message est personnalisé et on ne sait plus sur quoi ». Le
+  // second ne peut se déclencher que si le premier ne l'a pas fait, sinon un
+  // message générique récolterait les deux et le rapport dirait deux fois la
+  // même chose.
+  //
+  // Le seuil est le plus bas qui ait un sens : UNE observation ancrée. Rien
+  // n'exige qu'elle reprenne l'accroche RETENUE plutôt qu'un autre fait
+  // vérifié — `groundedFacts` porte le contexte métier autant que l'accroche,
+  // et une ouverture sur « vous mettez en avant le reportage en intérieur » est
+  // une personnalisation aussi réelle que celle qu'on avait suggérée.
+  const hook = input.hook ?? null;
+  if (hook !== null && hook.available) {
+    const shared = sharedGroundedWords(body, input.groundedFacts, input.tradeTerms ?? []);
+    if (shared.length === 0) {
+      add(
+        'MISSING_GROUNDED_HOOK',
+        'BLOCKING',
+        'une observation vérifiée était disponible et le message n’en reprend rien — ' +
+          'un premier message générique envoyé à quelqu’un qu’on a regardé est une occasion perdue',
+      );
+    } else if (hook.citedEvidenceIds.length === 0) {
+      add(
+        'HOOK_NOT_CITED',
+        'BLOCKING',
+        'le message reprend une observation mais ne cite aucune ligne de preuve — ' +
+          'la provenance ne se reconstitue pas après coup',
+        excerptOf(shared.join(', ')),
+      );
+    }
+  }
+
+  // --- le RÔLE de l'expéditeur (SENDER-ROLE-R1) --------------------------
+  // Placé APRÈS la personnalisation, et c'est l'ordre qui compte pour la
+  // lecture : les constats précédents disent « ce message est mal écrit »,
+  // celui-ci dit « ce message est bien écrit et se fait passer pour quelqu'un
+  // d'autre ». Ce sont deux natures de défaut, et les mélanger dans le rapport
+  // ferait lire le second comme une faute de style de plus.
+  for (const buyer of detectBuyerRole(body)) {
+    const code: FirstTouchCode =
+      buyer.scope === 'QUESTION' ? 'BUYER_ROLE_QUESTION' : 'BUYER_ROLE_INTENT';
+    add(code, 'BLOCKING', describeBuyerRole(buyer), buyer.excerpt);
+  }
+
   const blocking = findings.some((finding) => finding.severity === 'BLOCKING');
   const verdict: FirstTouchVerdict = blocking
     ? 'OFF_TONE'
@@ -684,11 +889,45 @@ export function checkFirstTouch(input: FirstTouchInput): FirstTouchReport {
   return Object.freeze({ verdict, findings: Object.freeze(findings), metrics });
 }
 
+/**
+ * Ce qu'un constat de rôle reproche, dit en français plutôt qu'en code.
+ *
+ * Le message est LU par le modèle à la reprise : il doit donc nommer la faute
+ * ET l'espace de sortie, sinon la seule correction évidente est de retirer la
+ * question — c'est-à-dire de produire un message sans rien à quoi répondre.
+ */
+function describeBuyerRole(buyer: BuyerRoleFinding): string {
+  const why: Record<BuyerRoleFinding['family'], string> = {
+    PREREQUISITE: 'demande ce qu’il faudrait réunir pour une prestation',
+    COVERAGE: 'vérifie s’ils se déplacent jusqu’à un endroit donné',
+    ELIGIBILITY: 'vérifie si une prestation serait acceptée',
+    PRICE_QUOTE: 'demande un prix ou un devis',
+    AVAILABILITY: 'demande un créneau, un délai ou une réservation',
+    JOB_LOGISTICS: 'demande comment se déroulerait une intervention',
+    OWN_PROPERTY: 'parle d’un véhicule ou d’un domicile qui serait le tien',
+    PURCHASE_INTENT: 'annonce une intention d’acheter la prestation',
+  };
+  return (
+    `${why[buyer.family]} (« ${buyer.label} ») — lu à froid, ça fait de toi un client ` +
+    'potentiel, ce que tu n’es pas. Pose une question sur l’ENTREPRISE elle-même ' +
+    '(son fonctionnement, son histoire, sa clientèle, le type de travail qu’elle fait).'
+  );
+}
+
 /** Les constats bloquants, rendus au modèle pour qu'il réécrive (une seule fois). */
 export function renderFirstTouchCorrections(report: FirstTouchReport): string {
   const blocking = report.findings.filter((finding) => finding.severity === 'BLOCKING');
   const lines = ['CE QUI N’ALLAIT PAS DANS TA PREMIÈRE VERSION — réécris en corrigeant'];
   for (const finding of blocking) lines.push(`- ${finding.code} : ${finding.message}`);
+  if (blocking.some((finding) => finding.code === 'MISSING_GROUNDED_HOOK')) {
+    lines.push(
+      '- OUVRE sur le détail vérifié qu’on t’a donné. Ne pars pas en « simple curiosité » : ' +
+        'c’est ce détail qui fait que ce message ne pouvait être écrit qu’à eux.',
+    );
+  }
+  if (blocking.some((finding) => finding.code === 'HOOK_NOT_CITED')) {
+    lines.push('- cite les identifiants du détail repris dans `used_evidence_ids`.');
+  }
   lines.push(
     `- vise ${String(FIRST_TOUCH_TARGET_WORDS.min)}–${String(FIRST_TOUCH_TARGET_WORDS.max)} mots, ` +
       'une ou deux phrases, une seule question.',

@@ -61,7 +61,7 @@ const VOICE_CORPUS: readonly { key: string; body: string; facts: readonly string
     key: 'lumiere-naturelle',
     body:
       'Bonjour, j’ai vu que vous travaillez surtout en lumière naturelle, je connaissais mal ' +
-      'cette approche. Vous intervenez sur quel secteur ?',
+      'cette approche. Vous avez commencé comme ça dès le départ ?',
     facts: ['Prestations affichées : portrait en lumière naturelle'],
   },
   {
@@ -90,9 +90,17 @@ describe('observation → réaction personnelle → question légère', () => {
    * prospect. C'est ce qui le distingue d'une seconde observation : il n'affirme
    * rien de nouveau sur l'entreprise, donc il n'a rien à sourcer.
    */
+  /**
+   * HERMES-FIRST-TOUCH-SENDER-ROLE-R1 — la question a changé, et pas le reste.
+   *
+   * Elle demandait « vous intervenez surtout sur quel secteur ? », ce que ce
+   * round refuse désormais : lue à froid, c'est une vérification de couverture,
+   * donc la question d'un client potentiel. La STRUCTURE éprouvée ici est la
+   * même — observation, réaction à la première personne, question légère.
+   */
   const TROIS_TEMPS =
     'Bonjour, j’ai vu que vous faites du portrait en lumière naturelle, je connaissais mal le principe ' +
-    'mais je trouve ça plutôt malin. Vous intervenez surtout sur quel secteur ?';
+    'mais je trouve ça plutôt malin. Vous avez commencé comme ça dès le départ ?';
 
   it('la structure en trois temps passe, et tient dans le budget', () => {
     const report = checkFirstTouch({ body: TROIS_TEMPS, groundedFacts: FACTS });
@@ -114,12 +122,12 @@ describe('observation → réaction personnelle → question légère', () => {
    * l'acquisition : elles se répondent d'un mot, ce qui est tout leur intérêt.
    */
   const QUESTIONS_LÉGÈRES: readonly string[] = [
-    'Bonjour, j’ai vu que vous faites du portrait en lumière naturelle, je connaissais mal le principe. Vous intervenez sur quel secteur ?',
+    'Bonjour, j’ai vu que vous faites du portrait en lumière naturelle, je connaissais mal le principe. Vous avez toujours travaillé comme ça ?',
     'Bonjour, j’ai vu que vous faites du reportage en intérieur, je trouve le concept plutôt pratique. C’est vous qui vous déplacez ou les gens viennent à vous ?',
     'Bonjour, j’ai vu que vous proposez du tirage sur papier fibre, je vois ça moins souvent qu’avant. Vous travaillez surtout avec des particuliers ?',
   ];
 
-  it('une question simple sur la zone, le fonctionnement ou la clientèle passe', () => {
+  it('une question simple sur le fonctionnement, l’histoire ou la clientèle passe', () => {
     for (const body of QUESTIONS_LÉGÈRES) {
       const report = checkFirstTouch({ body, groundedFacts: FACTS });
       expect(report.findings.filter((f) => f.severity === 'BLOCKING'), body).toEqual([]);

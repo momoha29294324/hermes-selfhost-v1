@@ -163,25 +163,42 @@ const MIN_CONFIDENCE = 0.7;
 /**
  * Les mots qui ne distinguent RIEN.
  *
- * « atelier » et « prestation standard » décrivent le métier de toute la
- * cible : les citer ne prouve pas qu'on a regardé, cela prouve qu'on a lu
- * l'annuaire. Une accroche bâtie dessus est un faux constat de personnalisation
- * — exactement le « j'adore ton site » que la mission interdit.
+ * Le nom d'un métier décrit l'activité de toute la cible : le citer ne prouve
+ * pas qu'on a regardé cette entreprise-là, cela prouve qu'on a lu l'annuaire.
+ * Une accroche bâtie dessus est un faux constat de personnalisation — exactement
+ * le « j'adore ton site » que ce dépôt interdit.
+ *
+ * ---------------------------------------------------------------------------
+ * Ces mots ne sont PAS écrits ici
+ * ---------------------------------------------------------------------------
+ * Hermes ne sait rien d'un métier tant qu'un opérateur ne le lui a pas déclaré.
+ * Le vocabulaire vient donc de `config/niches/<votre-niche>.json`
+ * (`serviceTerms`, `coreActivityTerms`), et l'appelant le passe — c'est la même
+ * source que le plancher de personnalisation lit dans `firstTouchStyle.ts`.
+ *
+ * Les quelques entrées ci-dessous sont les mots qui ne distinguent rien dans
+ * AUCUN métier — une « prestation » est une prestation partout. Elles ne
+ * remplacent pas la déclaration : sans elle, une accroche peut se bâtir sur le
+ * nom du métier, et c'est le plancher qui le rattrape.
  */
-const GENERIC_SERVICE_TERMS: ReadonlySet<string> = new Set([
-  'example-services',
-  'car atelier',
-  'prestation standard',
-  'prestation standard',
-  'prestation standard',
+const UNIVERSALLY_GENERIC_TERMS: readonly string[] = Object.freeze([
   'prestation',
-  'prestation standard',
-  'prestation standard',
+  'prestations',
+  'service',
+  'services',
   'entretien',
-  'entretien automobile',
-  'voiture',
-  'auto',
+  'devis',
 ]);
+
+/** Le vocabulaire qui ne distingue rien, pour CE métier-là. */
+function genericServiceTerms(tradeTerms: readonly string[]): ReadonlySet<string> {
+  const terms = new Set(UNIVERSALLY_GENERIC_TERMS.map(termKey));
+  for (const term of tradeTerms) {
+    const key = termKey(term);
+    if (key.length > 0) terms.add(key);
+  }
+  return terms;
+}
 
 function usable(row: PersonalizationEvidence): boolean {
   if (row.valueText === null) return false;
@@ -236,7 +253,7 @@ function termKey(term: string): string {
 const MOBILE_KEYS: ReadonlySet<string> = new Set(['domicile', 'a domicile', 'sur place', 'a votre domicile']);
 
 /** Découpe une liste de prestations, en retirant ce qui ne distingue rien. */
-function distinctiveServices(values: readonly string[]): string[] {
+function distinctiveServices(values: readonly string[], generic: ReadonlySet<string>): string[] {
   const seen = new Set<string>();
   const kept: string[] = [];
   for (const value of values) {
@@ -244,7 +261,7 @@ function distinctiveServices(values: readonly string[]): string[] {
       const term = raw.trim();
       const key = termKey(term);
       if (key.length < 4) continue;
-      if (GENERIC_SERVICE_TERMS.has(key)) continue;
+      if (generic.has(key)) continue;
       // La modalité « à domicile » a son propre angle : la laisser ici la
       // ferait passer pour une prestation.
       if (MOBILE_KEYS.has(key)) continue;
@@ -342,12 +359,70 @@ interface Candidate {
  * sujet ; elle sert quand rien de mieux n'existe. La zone vient en dernier :
  * elle prouve qu'on a regardé, sans rien ouvrir.
  */
+/**
+ * L'ordre de préférence des accroches.
+ *
+ * ---------------------------------------------------------------------------
+ * HERMES-FIRST-TOUCH-DIVERSITY-R1 — ce qui a changé, et la mesure qui l'a dit
+ * ---------------------------------------------------------------------------
+ * `MOBILE_SERVICE` était TROISIÈME. Sur les 563 prospects portant des preuves,
+ * il produisait **UNE seule phrase pour 211 d'entre eux** :
+ *
+ * ```text
+ * angle              occurrences   textes distincts   ratio
+ * AREA                      378                329    0.87
+ * SERVICE_MIX               300                 40    0.13
+ * PREMIUM_SERVICE           227                 11    0.05
+ * MOBILE_SERVICE            211                  1    0.00   ← « ils annoncent intervenir à domicile »
+ * PRICING_DISPLAYED         189                  1    0.00
+ * AUDIENCE                   64                  3    0.05
+ * BOOKING_PRESENT            22                  1    0.00
+ * ```
+ *
+ * Un angle dont le ratio vaut 0 n'est pas une personnalisation : c'est une
+ * phrase de gabarit qui a l'air observée. Le rejeu du round précédent l'a
+ * montré à l'échelle de trois prospects — les trois ouvraient sur la même
+ * modalité, avec la même phrase — et un lot entier aurait ouvert pareil.
+ *
+ * `SERVICE_MIX` et `PREMIUM_SERVICE` passent donc DEVANT lui : ils nomment ce
+ * que cette entreprise-là met en avant, donc ils varient. L'effet est mesuré,
+ * sur le corpus réel et non sur un échantillon :
+ *
+ * ```text
+ *                  avant    après
+ * AREA             41.9%    41.9%   (inchangé : seul candidat pour 235 prospects)
+ * MOBILE_SERVICE   26.6%     2.1%
+ * SERVICE_MIX      17.1%    40.8%
+ * AUDIENCE         10.3%    10.3%
+ * BOOKING_PRESENT   3.9%     3.9%
+ * PREMIUM_SERVICE   0.2%     0.9%
+ * ```
+ *
+ * Ce n'est PAS de la diversité pour la diversité : aucune accroche n'est
+ * inventée, aucun fait n'est fabriqué, et un prospect qui n'a qu'un seul angle
+ * observé garde exactement celui qu'il avait. Seuls les 312 prospects portant
+ * deux accroches ou plus sont concernés, et ce qui change chez eux est LEQUEL
+ * des faits déjà observés est mis en avant.
+ *
+ * `PREMIUM_SERVICE` n'est pas monté plus haut, et la raison est le CIBLAGE :
+ * ses valeurs réelles sont « protection retouche avancee » (71), « traitement
+ * retouche avancee » (65), « colorimétrie », « studio haut de gamme ». Sous
+ * HERMES-CLEANING-ONLY-ICP-R1 ces entreprises sont hors cible autonome, et
+ * ouvrir sur leur retouche avancée reviendrait à mieux personnaliser un message qui
+ * ne doit pas partir.
+ *
+ * `AREA` reste DERNIER bien qu'il soit le plus varié (0,87). Il n'est pas
+ * choisi par défaut : il est choisi quand il est le SEUL, ce qui est le cas de
+ * 235 prospects. Le promouvoir ferait ouvrir sur l'implantation des prospects
+ * qui ont mieux à dire, et surtout amènerait le modèle au bord de la question
+ * de couverture que HERMES-FIRST-TOUCH-SENDER-ROLE-R1 refuse.
+ */
 const ANGLE_PRIORITY: readonly PersonalizationAngle[] = Object.freeze([
   'BOOKING_PRESENT',
   'AUDIENCE',
-  'MOBILE_SERVICE',
   'SERVICE_MIX',
   'PREMIUM_SERVICE',
+  'MOBILE_SERVICE',
   'PRICING_DISPLAYED',
   'AREA',
 ]);
@@ -370,12 +445,23 @@ export interface PersonalizationInput {
    * branché, et la contradiction est devenue lisible.)
    */
   readonly angleHook?: string | null;
+  /**
+   * Le vocabulaire du MÉTIER, déclaré par l'opérateur dans sa niche.
+   *
+   * Voir `genericServiceTerms` : ces mots ne distinguent rien, donc ils ne
+   * peuvent pas porter une accroche. Absent, seuls les mots génériques de
+   * toutes les langues du commerce sont écartés.
+   */
+  readonly tradeTerms?: readonly string[];
 }
 
 export function buildFirstTouchPersonalization(
   input: PersonalizationInput,
 ): FirstTouchPersonalization {
   const rows = input.evidence;
+  // Le vocabulaire qui ne distingue rien pour CE métier — universel, plus ce
+  // que l'opérateur a déclaré. Lu une fois pour tout l'appel.
+  const generic = genericServiceTerms(input.tradeTerms ?? []);
   const candidates = new Map<PersonalizationAngle, Candidate>();
   const rejected: PersonalizationRejected[] = [];
 
@@ -444,7 +530,7 @@ export function buildFirstTouchPersonalization(
   if (services.rows.length === 0) {
     reject('SERVICE_MIX', 'NOT_OBSERVED');
   } else {
-    const distinctive = distinctiveServices(services.values);
+    const distinctive = distinctiveServices(services.values, generic);
     if (distinctive.length === 0) {
       reject('SERVICE_MIX', 'NOT_DISTINCTIVE');
     } else {
@@ -468,7 +554,7 @@ export function buildFirstTouchPersonalization(
   if (premium.rows.length === 0) {
     reject('PREMIUM_SERVICE', 'NOT_OBSERVED');
   } else {
-    const distinctive = distinctiveServices(premium.values);
+    const distinctive = distinctiveServices(premium.values, generic);
     if (distinctive.length === 0) reject('PREMIUM_SERVICE', 'NOT_DISTINCTIVE');
     else add('PREMIUM_SERVICE', `ils proposent aussi ${distinctive[0]!}`, premium.rows);
   }
@@ -494,10 +580,10 @@ export function buildFirstTouchPersonalization(
   // --- Le contexte métier, observé -----------------------------------------
   //
   // Distinct de l'accroche : il dit à QUI on écrit, il ne se cite pas dans le
-  // message. Sans lui, le modèle écrit à « une entreprise de prestation standard »,
+  // message. Sans lui, le modèle écrit à « une entreprise de services »,
   // c'est-à-dire à personne.
   const businessContext: string[] = [];
-  const service = distinctiveServices(services.values);
+  const service = distinctiveServices(services.values, generic);
   if (service.length > 0) businessContext.push(`prestations observées : ${service.slice(0, 4).join(', ')}`);
   if (mentionsMobile(services.values)) businessContext.push('intervention à domicile annoncée');
   // La ville n'entre QUE si une ligne de preuve la porte. `prospects.city` seul
@@ -558,6 +644,121 @@ export function buildFirstTouchPersonalization(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Les DIRECTIONS de curiosité — HERMES-FIRST-TOUCH-DIVERSITY-R1
+// ---------------------------------------------------------------------------
+
+/**
+ * Une direction de question, pas une question.
+ *
+ * ---------------------------------------------------------------------------
+ * Pourquoi elles existent
+ * ---------------------------------------------------------------------------
+ * HERMES-FIRST-TOUCH-SENDER-ROLE-R1 a fermé la question de CLIENT et ouvert la
+ * question d'ENTREPRISE. Le rejeu qui l'a validée a aussi montré ce que le
+ * prompt seul produit quand on lui donne DEUX exemples de la même famille :
+ * **10 candidats sur 18** ont posé une variante de « dès le départ ou c'est
+ * venu avec le temps ? ». La monoculture n'avait pas disparu, elle avait
+ * déménagé.
+ *
+ * Ces directions ne sont donc pas une liste de formulations — ce serait le
+ * gabarit que R6A a mis un round à retirer, une couche plus bas. Ce sont des
+ * ANGLES D'INTÉRÊT, et chacun n'existe que si une preuve le porte.
+ *
+ * ---------------------------------------------------------------------------
+ * Ce qu'elles ne font pas
+ * ---------------------------------------------------------------------------
+ * Elles ne créent aucune variété artificielle. Une direction absente des
+ * preuves n'est jamais proposée, et un prospect dont on n'a observé qu'une
+ * chose n'en reçoit qu'une ou deux. Le modèle ne choisit pas « une autre
+ * catégorie pour changer » : il choisit celle que l'observation retenue
+ * soutient.
+ */
+export type CuriosityDirection =
+  /** Comment ils en sont venus à travailler comme ça. */
+  | 'MODEL_ORIGIN'
+  /** Si leur façon de faire a changé en cours de route. */
+  | 'MODEL_EVOLUTION'
+  /** Quelle clientèle ils ont réellement. */
+  | 'CUSTOMER_MIX'
+  /** Ce qui change d'un type de client à l'autre. */
+  | 'SEGMENT_DIFFERENCE'
+  /** Le travail qui revient le plus souvent. */
+  | 'RECURRING_WORK'
+  /** S'ils s'appuient surtout sur une prestation. */
+  | 'SPECIALIZATION'
+  /** Comment une prestation précise est arrivée dans leur gamme. */
+  | 'SERVICE_ORIGIN'
+  /** Pourquoi ils ont mis en place quelque chose de cette façon. */
+  | 'OPERATING_CHOICE'
+  /** Le type de demande qui domine là où ils sont installés. */
+  | 'LOCAL_DEMAND';
+
+/** Ce que chaque direction cherche, dit au modèle en une ligne. */
+const DIRECTION_LABELS: Readonly<Record<CuriosityDirection, string>> = Object.freeze({
+  MODEL_ORIGIN: 'comment ils en sont venus à fonctionner comme ça',
+  MODEL_EVOLUTION: 'si leur façon de travailler a changé en cours de route',
+  CUSTOMER_MIX: 'quelle clientèle ils ont réellement au quotidien',
+  SEGMENT_DIFFERENCE: 'ce qui change concrètement d’un type de client à l’autre',
+  RECURRING_WORK: 'le type de travail qui revient le plus souvent chez eux',
+  SPECIALIZATION: 's’ils s’appuient surtout sur une prestation en particulier',
+  SERVICE_ORIGIN: 'comment une prestation précise est arrivée dans leur gamme',
+  OPERATING_CHOICE: 'pourquoi ils ont mis ça en place de cette façon-là',
+  LOCAL_DEMAND: 'le type de demande qui domine là où ils sont installés',
+});
+
+/**
+ * Les directions qu'un angle OBSERVÉ ouvre.
+ *
+ * `MODEL_ORIGIN` et `MODEL_EVOLUTION` — la famille dont le round précédent a
+ * abusé — ne sont ouvertes que par une MODALITÉ de travail (domicile,
+ * réservation en ligne). Elles ne le sont plus par une liste de prestations,
+ * qui ouvre `RECURRING_WORK` et `SPECIALIZATION` : c'est cette seule règle qui
+ * empêche « dès le départ ? » d'être disponible partout.
+ */
+const ANGLE_DIRECTIONS: Readonly<Record<PersonalizationAngle, readonly CuriosityDirection[]>> =
+  Object.freeze({
+    MOBILE_SERVICE: Object.freeze(['MODEL_ORIGIN', 'MODEL_EVOLUTION'] as const),
+    BOOKING_PRESENT: Object.freeze(['OPERATING_CHOICE', 'MODEL_EVOLUTION'] as const),
+    AUDIENCE: Object.freeze(['CUSTOMER_MIX', 'SEGMENT_DIFFERENCE'] as const),
+    SERVICE_MIX: Object.freeze(['RECURRING_WORK', 'SPECIALIZATION'] as const),
+    PREMIUM_SERVICE: Object.freeze(['SERVICE_ORIGIN', 'SPECIALIZATION'] as const),
+    PRICING_DISPLAYED: Object.freeze(['OPERATING_CHOICE'] as const),
+    AREA: Object.freeze(['LOCAL_DEMAND', 'MODEL_ORIGIN'] as const),
+  });
+
+/**
+ * Les directions ouvertes par ce qu'on a réellement observé de ce prospect.
+ *
+ * L'accroche RETENUE parle en premier — c'est elle que le message va citer, et
+ * une question qui part d'un fait qu'on n'a pas dit tombe à côté. Les accroches
+ * solides NON retenues suivent : elles n'entrent pas dans le message comme
+ * observation (§19 — une seule), mais elles disent quelque chose de vrai de
+ * cette entreprise, donc elles peuvent porter la CURIOSITÉ.
+ *
+ * Pure. Rend une liste vide quand rien n'a été observé, et c'est un `null` de
+ * fait : le bloc dit alors qu'il n'y a pas de direction, jamais qu'il faut en
+ * inventer une.
+ */
+export function curiosityDirections(
+  result: FirstTouchPersonalization,
+): readonly CuriosityDirection[] {
+  const seen = new Set<CuriosityDirection>();
+  const ordered: CuriosityDirection[] = [];
+  const hooks = result.hook === null ? result.alsoAvailable : [result.hook, ...result.alsoAvailable];
+  for (const hook of hooks) {
+    // Une accroche venue de `prospect_angles` ne porte aucune ligne de preuve :
+    // c'est un raisonnement, pas une observation, et elle n'ouvre donc rien.
+    if (hook.evidenceIds.length === 0) continue;
+    for (const direction of ANGLE_DIRECTIONS[hook.angle]) {
+      if (seen.has(direction)) continue;
+      seen.add(direction);
+      ordered.push(direction);
+    }
+  }
+  return Object.freeze(ordered);
+}
+
 /** Le bloc rendu au modèle. Vide de toute interprétation. */
 export function renderPersonalizationBlock(result: FirstTouchPersonalization): string {
   const lines: string[] = [];
@@ -588,8 +789,32 @@ export function renderPersonalizationBlock(result: FirstTouchPersonalization): s
       '  commente pas, ne le complimente pas, ne l’analyse pas, et n’en ajoute aucun autre.',
     );
     if (result.hook.evidenceIds.length > 0) {
-      lines.push('- si tu le reprends, cite ses identifiants entre crochets dans `used_evidence_ids`.');
+      lines.push(
+        '- ce détail est OBLIGATOIRE : le message doit le reprendre, et `used_evidence_ids` doit',
+        '  porter au moins un de ses identifiants. Un message qui l’ignore est refusé.',
+      );
     }
+  }
+
+  // --- les directions ouvertes (HERMES-FIRST-TOUCH-DIVERSITY-R1) ------------
+  //
+  // Elles sont rendues APRÈS l'accroche, et jamais avant : la question part du
+  // fait qu'on vient de dire, pas l'inverse. Ce ne sont pas des formulations —
+  // en donner serait remplacer une monoculture par une autre, ce que le rejeu
+  // du round précédent a mesuré (10 candidats sur 18 sur la même famille).
+  const directions = curiosityDirections(result);
+  lines.push('', 'CE QUE TU PEUX AVOIR ENVIE DE SAVOIR (choisis-en UNE, celle qui suit ton observation)');
+  if (directions.length === 0) {
+    lines.push(
+      '- rien d’observé n’en ouvre. Pose une question simple sur leur façon de travailler,',
+      '  sans rien présumer de leur activité.',
+    );
+  } else {
+    for (const direction of directions) lines.push(`- ${DIRECTION_LABELS[direction]}`);
+    lines.push(
+      '- ce sont des DIRECTIONS, pas des phrases : trouve tes mots. Si plusieurs conviennent,',
+      '  ne prends pas systématiquement la première.',
+    );
   }
 
   return lines.join('\n');

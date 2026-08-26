@@ -55,8 +55,13 @@ export interface LoadPersonalizationInput {
   readonly prospectId: string;
   readonly displayName: string;
   readonly city: string | null;
-  /** L'accroche de l'angle commercial, quand une existe. Elle gagne. */
+  /** L'accroche de l'angle commercial, quand une existe. Elle est un REPLI. */
   readonly angleHook?: string | null;
+  /**
+   * Le vocabulaire du MÉTIER, déclaré dans la niche de la campagne. Il écarte
+   * les mots qui ne distinguent rien. Voir `buildFirstTouchPersonalization`.
+   */
+  readonly tradeTerms?: readonly string[];
 }
 
 /** Lit les preuves d'un prospect et en tire son accroche. Lecture seule. */
@@ -70,5 +75,6 @@ export async function loadFirstTouchPersonalization(
     displayName: input.displayName,
     city: input.city,
     angleHook: input.angleHook ?? null,
+    tradeTerms: input.tradeTerms ?? [],
   });
 }

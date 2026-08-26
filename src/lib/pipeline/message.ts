@@ -191,13 +191,31 @@ Trois temps, dans cet ordre, sans que rien ne le signale au lecteur :
 
 Le deuxième temps est ce qui sépare un message écrit par quelqu'un d'un message écrit par un système. Ne le sacrifie pas pour gagner des mots.
 
-Ta question peut porter sur : leur zone d'intervention, une prestation, leur façon de travailler, une spécialisation, le type de demandes qu'ils reçoivent, ou n'importe quel élément réellement observable de leur activité. Elle doit se répondre en une phrase, sans effort et sans avoir à réfléchir. Si elle ressemble à la question d'un commercial qui prend des notes, elle est mauvaise.
+QUI TU ES DANS CE MESSAGE
+Quelqu'un qui trouve leur activité intéressante et qui pose une question dessus. Tu n'es PAS un client potentiel, et rien dans ton message ne doit permettre de le croire. C'est la faute la plus facile à commettre ici, parce qu'elle produit des questions parfaitement naturelles : demander vos disponibilités, si on peut vous confier une seule pièce, ou dans quelles communes vous vous déplacez sonne juste — et fait croire à quelqu'un qu'un client vient d'écrire. Il répondra en client, et la conversation partira sur un malentendu que tu auras créé.
+
+Ta question porte donc sur L'ENTREPRISE, pas sur la prestation vue du côté de celui qui l'achèterait.
+
+Le bloc « CE QUE TU PEUX AVOIR ENVIE DE SAVOIR » plus bas te donne les directions que les faits observés ouvrent réellement pour CE prospect. Prends-en UNE, celle que ton observation amène naturellement. Ce sont des directions, pas des phrases : ne les récite pas.
+
+Une mise en garde qui vaut pour tout le reste : « vous avez toujours fait comme ça ou c'est venu avec le temps ? » est une bonne question, et c'est aussi celle qui vient en premier à l'esprit. Elle ne convient QUE si ce que tu as observé est une façon de travailler. Si tu as observé des prestations, demande plutôt ce qui revient le plus souvent ; si tu as observé une clientèle, demande plutôt comment elle se répartit ; si tu as observé un outil ou une organisation, demande plutôt pourquoi c'est fait comme ça. Une question d'origine posée sur une liste de prestations sonne creux, parce qu'elle aurait pu être posée à n'importe qui.
+
+Deux exemples du REGISTRE attendu — pas des phrases à réutiliser, et surtout pas des gabarits. Ils sont volontairement de familles DIFFÉRENTES :
+"J'ai vu que vous travaillez avec des particuliers et des pros, c'est une combinaison que je vois assez peu. C'est plutôt les uns ou les autres au quotidien ?"
+"J'ai vu que vous proposez deux formules assez différentes. Vous avez surtout des demandes sur l'une des deux ?"
+
+Ta question peut demander quelque chose que tu ignores — c'est même le but. Ce qui doit rester vrai est ce que tu AFFIRMES avant elle : l'observation vient des faits vérifiés, et rien d'autre. N'invente jamais une histoire, une ancienneté, une évolution ou une raison : demande-la.
+
+Si le détail vérifié qu'on t'a donné est le LIEU où ils sont installés, tu peux le dire — mais ne demande jamais jusqu'où ils se déplacent, ni dans quelles communes : c'est la question d'un client, pas la tienne. Demande plutôt ce que ça change pour eux, ou quel type de demande domine là-bas.
+
+Elle doit se répondre en une phrase, sans effort et sans avoir à réfléchir. Si elle ressemble à la question d'un commercial qui prend des notes, elle est mauvaise ; si elle ressemble à la question de quelqu'un qui veut acheter la prestation, elle est pire.
 
 Contraintes de forme :
 - ${FIRST_TOUCH_TARGET_WORDS.min} à ${FIRST_TOUCH_TARGET_WORDS.max} mots, ${maxChars} caractères au maximum — ça se lit sur un téléphone ;
 - UNE seule question, jamais deux ;
 - au plus une observation, et seulement si un fait vérifié la porte ;
-- si rien n'a été observé, saute les DEUX premiers temps : une question simple et honnête vaut mieux qu'une observation floue, et bien mieux qu'une observation inventée. C'est le seul cas où le message tient en deux temps.
+- si un détail vérifié t'est donné, tu DOIS le reprendre, et citer ses identifiants dans used_evidence_ids. Un message générique écrit à quelqu'un dont on a observé quelque chose est refusé ;
+- si rien n'a été observé — et seulement dans ce cas —, saute les DEUX premiers temps : une question simple et honnête vaut mieux qu'une observation floue, et bien mieux qu'une observation inventée. C'est le seul cas où le message tient en deux temps.
 
 LE TON À TENIR
 ${renderVoiceGuidance(identity.voiceExamples)}
@@ -213,6 +231,8 @@ Vouvoie ou tutoie, mais pas les deux dans le même message. Aucune abréviation 
 - proposer une page dédiée, une landing page ou une refonte ;
 - parler d'attribution, de tunnel, de funnel, de parcours de contact, de taux de conversion, de leads ou de KPI ;
 - proposer un appel, un créneau, une visio ou un rendez-vous ;
+- poser une question que poserait quelqu'un qui veut acheter la prestation : leur zone d'intervention ou jusqu'où ils se déplacent, ce qu'il faut prévoir sur place, s'ils acceptent tel type de véhicule, un prix, un devis, un délai, une disponibilité, la durée d'une intervention ;
+- parler de ta propre voiture, de ton propre domicile, ou d'un besoin que tu aurais ;
 - présenter l'agence, sa méthode ou ce qu'elle met en place ;
 - annoncer un travail gratuit, un paiement aux résultats, une absence d'engagement ou de risque ;
 - poser deux questions.
@@ -373,6 +393,14 @@ export function checkGeneratedMessages(
    * pas une observation, et elle est écartée ici comme elle l'a toujours été.
    */
   personalization?: FirstTouchPersonalization | null,
+  /**
+   * Le vocabulaire du MÉTIER, déclaré par l'opérateur dans sa niche
+   * (`serviceTerms`, `coreActivityTerms`). Il ne sert qu'au plancher de
+   * personnalisation, qui doit distinguer « ce message reprend une observation
+   * faite sur CETTE entreprise » de « ce message nomme le métier de toute la
+   * cible ». Absent, le plancher reste actif et simplement plus lâche.
+   */
+  tradeTerms?: readonly string[],
 ): MessageResult {
   // Les identifiants citables : ceux de la recherche, ET ceux des lignes
   // `prospect_evidence` que le bloc de personnalisation a réellement montrées.
@@ -402,7 +430,21 @@ export function checkGeneratedMessages(
       groundedFacts: groundedTexts,
     });
     const usedFacts = (raw.used_evidence_ids ?? []).filter((id) => allowedIds.has(id));
-    const firstTouch = checkFirstTouch({ body, groundedFacts: groundedTexts });
+    // Le PLANCHER de personnalisation (FLOOR-R1).
+    //
+    // « Une accroche était disponible » veut dire une chose précise et
+    // vérifiable : le bloc rendu au modèle portait une observation ADOSSÉE à au
+    // moins une ligne `prospect_evidence`. L'accroche de repli venue de
+    // `prospect_angles` ne compte pas — elle sort avec `evidenceIds` vide, elle
+    // n'ancre rien, et exiger qu'on la reprenne reviendrait à exiger qu'on
+    // reprenne un raisonnement d'agence.
+    const hookEvidence = personalization?.hook?.evidenceIds ?? [];
+    const firstTouch = checkFirstTouch({
+      body,
+      groundedFacts: groundedTexts,
+      hook: { available: hookEvidence.length > 0, citedEvidenceIds: usedFacts },
+      tradeTerms: tradeTerms ?? [],
+    });
     // Le report est produit d'abord, le drapeau en découle. L'inverse — écrire
     // un drapeau puis reconstituer le report — ferait exister deux versions du
     // même constat, dont une seule serait à jour.
@@ -476,6 +518,8 @@ export async function generateMessages(
    * comparaison vérifiable plutôt que promise.
    */
   personalization?: FirstTouchPersonalization | null,
+  /** Voir `checkGeneratedMessages` : le vocabulaire du métier, s'il est déclaré. */
+  tradeTerms?: readonly string[],
 ): Promise<MessageResult | null> {
   const request = buildMessageRequest(campaign, operator, prospect, research, angle, caseStudy, personalization);
 
@@ -499,6 +543,7 @@ export async function generateMessages(
     caseStudy,
     outcome.modelRunId,
     personalization,
+    tradeTerms,
   );
 
   const chosen = first.messages.find((message) => message.variant === first.chosenVariant);
@@ -539,6 +584,7 @@ export async function generateMessages(
     caseStudy,
     repaired.modelRunId,
     personalization,
+    tradeTerms,
   );
   const secondChosen = second.messages.find((message) => message.variant === second.chosenVariant);
   // La reprise ne remplace le premier jet que si elle est MEILLEURE. Une

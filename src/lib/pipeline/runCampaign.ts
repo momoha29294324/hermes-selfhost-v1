@@ -90,6 +90,11 @@ export async function runCampaign(options: RunOptions): Promise<{ campaignId: st
   // découverte, la recherche et le score tournent sans identité. C'est la
   // génération du premier message, et elle seule, qui refuse sans elle.
   const operatorProfile = loadOperatorProfile();
+  // Le vocabulaire du MÉTIER, tel que l'opérateur l'a déclaré. Il ne sert qu'au
+  // plancher de personnalisation du premier message : sans lui, le plancher ne
+  // peut pas savoir quel mot d'un texte nomme simplement l'activité de toute la
+  // cible. Vide, il reste actif et simplement plus lâche.
+  const tradeTerms: readonly string[] = [...niche.serviceTerms, ...niche.coreActivityTerms];
   const http = new HttpClient({ sql });
   const repo = new ProspectRepository(sql, logger);
   const router = new ModelRouter({ sql, logger, maxCalls: campaign.limits.maxLlmCalls });
@@ -659,10 +664,12 @@ export async function runCampaign(options: RunOptions): Promise<{ campaignId: st
           displayName: fresh.display_name,
           city: fresh.city,
           angleHook: angle.personalization,
+          tradeTerms,
         });
 
         const generated = await generateMessages(
           router, campaign, operatorProfile, fresh, research, angle, caseStudy, personalization,
+          tradeTerms,
         );
         if (!generated) {
           stats.notes.push(`message indisponible pour ${fresh.display_name}`);

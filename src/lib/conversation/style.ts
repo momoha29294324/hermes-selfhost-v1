@@ -134,6 +134,60 @@ const BURST_WINDOW_MS = 120_000;
 // ---------------------------------------------------------------------------
 
 /**
+ * Les bornes de mot, écrites en toutes lettres parce que `\b` est ASCII.
+ *
+ * ---------------------------------------------------------------------------
+ * HERMES-FIRST-TOUCH-TU-MARKERS-R1 — « tête » contenait un tutoiement
+ * ---------------------------------------------------------------------------
+ * `\b` se calcule sur `[A-Za-z0-9_]`. Dans « tête », le `ê` n'est PAS un
+ * caractère de mot, donc `\bte\b` matche les deux dernières lettres : la
+ * fonction comptait un tutoiement dans un mot qui n'en porte aucun. Même chose
+ * pour « têtu » (`tu`), « arrête », « fête », « bête », « honnête », « côte ».
+ *
+ * Le défaut est SILENCIEUX — la fonction rend un compte, pas une erreur — et il
+ * a été trouvé de la seule façon dont ce genre de défaut se trouve : un message
+ * de premier contact irréprochable refusé en `ADDRESS_MODE_MIXED` pour
+ * « vous aviez ce fonctionnement en tête ? ».
+ *
+ * C'est la mise en garde que `firstTouchStyle.ts` et `naturalness.ts` portent
+ * déjà dans leur en-tête. Elle n'avait pas été appliquée ici.
+ *
+ * ---------------------------------------------------------------------------
+ * Pourquoi ce correctif est sûr, et sur quelle mesure
+ * ---------------------------------------------------------------------------
+ * La classe accentuée AJOUTE des caractères à ce qui compte comme « lettre ».
+ * Le motif ne peut donc que matcher MOINS, jamais plus — un vrai marqueur n'est
+ * jamais collé à une lettre accentuée. L'apostrophe reste HORS de la classe, si
+ * bien que « j'te dis » compte toujours.
+ *
+ * Mesuré sur tous les corpus réels du dépôt, et pas sur un échantillon :
+ *
+ * ```text
+ * corpus                        lignes   comptes tu changés   REGISTRE basculé
+ * outreach_messages                420                    1                  0
+ * r6b_inbound_messages              23                    2                  0*
+ * r6b_reply_drafts                 119                    1                  0
+ * r6b_dispatch_manifests            37                    0                  0
+ * ```
+ *
+ * (*) Deux messages entrants passent de `TU` à `UNKNOWN` — « Et ça me coûte
+ * combien de tester ? », dont le seul marqueur était le `te` de « coûte ». Ils
+ * ne portent AUCUN tutoiement : `UNKNOWN` est la lecture juste. Et le registre
+ * du FIL ne bouge pas, parce que `resolveAddressMode` traverse les messages
+ * ambigus pour s'arrêter au dernier qui tranche — c'est son comportement
+ * fail-closed documenté. Les trois fils réels rendent le même registre avant et
+ * après, le fil vivant en tutoiement compris.
+ *
+ * Les quatre lecteurs partagés ont été relus un par un : `countAddressMarkers`
+ * (premier contact, `ADDRESS_MODE_MIXED`) et `detectAddressMode`
+ * (`naturalness.ts`, `ADDRESS_MODE_MISMATCH`) ne peuvent que signaler MOINS,
+ * puisque le compte `vous` ne bouge pas ; `resolveAddressMode` est mesuré
+ * ci-dessus ; `learning/override.ts` n'écrit qu'un constat descriptif.
+ */
+const TU_START = "(?<![a-z0-9à-öø-ÿ])";
+const TU_END = '(?![a-z0-9à-öø-ÿ])';
+
+/**
  * Marqueurs de tutoiement. Volontairement étroits : `ton`, `ta` et `tes` sont
  * ambigus en français (« ton de la voix »), donc exclus. Mieux vaut rendre
  * `UNKNOWN` que trancher sur un homographe.
@@ -144,10 +198,24 @@ const BURST_WINDOW_MS = 120_000;
  * tutoiement franc qu'aucun marqueur ne voyait. En français, `t'` n'élide que
  * `te`, `tu` ou `toi` — il n'y a pas d'homographe à craindre ici.
  */
-const TU_MARKERS =
-  /\b(tu|toi|te|t'as|t'es|t'avais|tutoie|tutoyer)\b|\bt'[a-zà-öø-ÿ]{2,}|\bton\s+(agence|business|équipe|site|budget|offre)\b/i;
+const TU_MARKERS = new RegExp(
+  `${TU_START}(tu|toi|te|t'as|t'es|t'avais|tutoie|tutoyer)${TU_END}` +
+    `|${TU_START}t'[a-zà-öø-ÿ]{2,}` +
+    `|${TU_START}ton\\s+(agence|business|équipe|site|budget|offre)${TU_END}`,
+  'i',
+);
 
-const VOUS_MARKERS = /\b(vous|votre|vos|vous-même)\b/i;
+/**
+ * Marqueurs de vouvoiement.
+ *
+ * Bornés de la même façon que le tutoiement, pour que les deux compteurs se
+ * lisent avec la même règle — un seul corrigé rendrait la comparaison
+ * asymétrique, et c'est cette comparaison qui décide du registre. La mesure dit
+ * qu'aucune ligne du dépôt ne change : il n'existe pas de mot français où
+ * « vous », « votre » ou « vos » se retrouve collé derrière une lettre
+ * accentuée. C'est donc une mise en cohérence, pas un correctif.
+ */
+const VOUS_MARKERS = new RegExp(`${TU_START}(vous|votre|vos|vous-même)${TU_END}`, 'i');
 
 const FORMAL_MARKERS =
   /\b(cordialement|bien à vous|sincères salutations|madame|monsieur|je vous prie|veuillez|dans l'attente|respectueusement)\b/i;

@@ -49,7 +49,7 @@
  */
 import { getSql } from '@/lib/db';
 import { migrate } from '@/lib/db/migrate';
-import { loadCampaign, loadOperatorProfile } from '@/lib/config/load';
+import { loadCampaign, loadNiche, loadOperatorProfile } from '@/lib/config/load';
 import { createLogger } from '@/lib/logging/logger';
 import { envBool } from '@/lib/env';
 import { ModelRouter } from '@/lib/models/router';
@@ -57,6 +57,7 @@ import { ProspectRepository } from '@/lib/repo/prospects';
 import { buildAngle, loadCaseStudy } from '@/lib/pipeline/angle';
 import { generateMessages } from '@/lib/pipeline/message';
 import { loadFirstTouchPersonalization } from '@/lib/pipeline/firstTouchPersonalizationStore';
+import { readCodeRevision } from '@/lib/inbound/codeRevision';
 import { contactChannels } from '@/lib/pipeline/reach';
 import {
   BatchRequestError,
@@ -101,6 +102,11 @@ async function main(): Promise<void> {
   const request = parseBatchRequest(process.argv.slice(2));
   const logger = createLogger({ cmd: 'r6b:generate' });
   const campaign = loadCampaign(request.campaignSlug);
+  // Le vocabulaire du MÉTIER, pour le plancher de personnalisation. Voir
+  // `runCampaign` : c'est la même lecture, depuis la même déclaration de niche,
+  // et les deux chemins de production doivent en avoir la même.
+  const niche = loadNiche(campaign.niche);
+  const tradeTerms: readonly string[] = [...niche.serviceTerms, ...niche.coreActivityTerms];
   const operatorProfile = loadOperatorProfile();
 
   const sql = await getSql();
@@ -156,6 +162,22 @@ async function main(): Promise<void> {
     let angleId: string | null;
     let draft: string;
     let modelRunId: string | null;
+    /**
+     * HERMES-MANIFEST-OPERATOR-RETIREMENT-R1 §10 — sous quelle révision du dépôt
+     * ce brouillon a-t-il été écrit ?
+     *
+     * Le défaut qu'elle rend détectable a été vécu le 25 août 2026 : trois
+     * manifestes verrouillés avant le correctif 0fec132 restaient parfaitement
+     * envoyables par un worker démarré APRÈS lui. Rien, dans le manifeste, ne
+     * pouvait le dire — `locked_at` date le verrouillage, pas la rédaction, et
+     * `model_runs` porte le modèle et le coût, jamais le code.
+     *
+     * `null` veut dire « non observée », jamais « à jour » — d'où l'absence de
+     * valeur de repli. `--reuse-messages` la laisse nulle : le texte repris
+     * vient d'`outreach_messages`, écrit à une date que cette commande n'a pas
+     * observée, et la remplir ici affirmerait une provenance qu'on n'a pas vue.
+     */
+    let generationCodeRevision: string | null = null;
     let guardrailFlags: unknown;
     let hookEvidenceIds: unknown;
     let hookGrounded: boolean;
@@ -208,6 +230,7 @@ async function main(): Promise<void> {
         displayName: prospect.display_name,
         city: prospect.city,
         angleHook: angle.personalization,
+        tradeTerms,
       });
       logger.info('r6b.first_touch_personalization', {
         prospect: prospect.display_name,
@@ -218,6 +241,7 @@ async function main(): Promise<void> {
 
       let generated = await generateMessages(
         router, campaign, operatorProfile, prospect, research, angle, caseStudy, personalization,
+        tradeTerms,
       );
       if (!generated) throw new Error(`message indisponible pour ${prospect.display_name} — échec technique`);
       let chosen = generated.messages.find((m) => m.variant === generated!.chosenVariant);
@@ -228,6 +252,7 @@ async function main(): Promise<void> {
         logger.warn('r6b.guardrail_retry', { prospect: prospect.display_name, flags: chosen.guardrailFlags });
         generated = await generateMessages(
           router, campaign, operatorProfile, prospect, research, angle, caseStudy, personalization,
+          tradeTerms,
         );
         if (!generated) throw new Error(`message indisponible pour ${prospect.display_name} après retry`);
         chosen = generated.messages.find((m) => m.variant === generated!.chosenVariant);
@@ -266,6 +291,7 @@ async function main(): Promise<void> {
       hookEvidenceIds = angle.personalizationEvidence;
       hookGrounded = angle.personalizationEvidence.length > 0;
       blocked = chosen.blocked;
+      generationCodeRevision = readCodeRevision(process.cwd());
     }
 
     const channels = contactChannels(prospect);
@@ -276,8 +302,9 @@ async function main(): Promise<void> {
     await sql.query(
       `insert into r6b_batch_items
          (batch_id, prospect_id, item_index, research_id, angle_id, model_run_id,
-          original_draft, hook_evidence_ids, contact_channels, contact_history, guardrail_flags)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          original_draft, hook_evidence_ids, contact_channels, contact_history, guardrail_flags,
+          generation_code_revision)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [
         batchId,
         prospect.id,
@@ -290,6 +317,7 @@ async function main(): Promise<void> {
         JSON.stringify(channels),
         history,
         JSON.stringify(guardrailFlags ?? []),
+        generationCodeRevision,
       ],
     );
 
