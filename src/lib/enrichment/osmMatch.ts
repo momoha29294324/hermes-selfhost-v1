@@ -50,12 +50,22 @@ interface OverpassElement {
 
 /**
  * Distinctive words of a business name — the ones worth searching OSM for.
- * Generic trade words are useless as a filter: half the niche contains them.
+ *
+ * Generic words are useless as a filter: half of any niche contains them. This
+ * list holds words that distinguish nothing in ANY trade — legal forms, filler
+ * nouns, marketing adjectives. It deliberately holds no trade vocabulary: this
+ * edition knows nothing about a trade until an operator declares one, and a
+ * word written here would be a niche wired into `src/`.
+ *
+ * Tokens are single words: `distinctiveTokens` splits on whitespace before
+ * looking anything up, so a multi-word entry could never match.
  */
 const GENERIC_TOKENS = new Set([
-  'auto', 'autos', 'automobile', 'automobiles', 'example-services', 'detail', 'wash', 'prestation',
-  'prestation standard', 'car', 'cars', 'clean', 'cleaning', 'service', 'services', 'center', 'centre',
-  'pro', 'france', 'garage', 'preparation', 'renovation', 'concept', 'atelier',
+  'sarl', 'sasu', 'eurl', 'entreprise', 'societe', 'compagnie', 'company',
+  'group', 'groupe', 'agence', 'agency', 'studio', 'atelier', 'maison',
+  'service', 'services', 'center', 'centre', 'concept', 'expert', 'experts',
+  'pro', 'prestation', 'prestations', 'france', 'french', 'international',
+  'premium', 'prestige', 'elite', 'quality', 'qualite',
 ]);
 
 export function distinctiveTokens(name: string): string[] {

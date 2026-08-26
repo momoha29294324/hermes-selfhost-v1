@@ -108,7 +108,7 @@ export function buildCrmPayload(
     contactName: null,
     // IG5.1 — le repli sur le destinataire du manifeste ne vaut que si ce
     // destinataire EST une adresse. Sur un manifeste `instagram_dm`, il vaut un
-    // handle, et le recopier ici aurait écrit « @atelieratelier_ » dans le
+    // handle, et le recopier ici aurait écrit « @atelierdemo_ » dans le
     // champ e-mail d'un CRM — une donnée fausse, figée durablement chez un
     // tiers. Le handle a déjà son champ, deux lignes plus bas.
     email:

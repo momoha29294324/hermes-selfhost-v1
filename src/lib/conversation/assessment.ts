@@ -426,7 +426,7 @@ function mergeCommercialDemands(
  * indulgence, et l'autonomie ne prouverait plus rien.
  *
  * Le texte retenu est `human_text` quand un humain a réécrit — c'est CE texte
- * qui compte, pas la proposition du modèle. Un brouillon que un opérateur a corrigé
+ * qui compte, pas la proposition du modèle. Un brouillon qu'un opérateur a corrigé
  * puis approuvé décrit ce qui serait parti, et c'est ce qu'on doit juger.
  */
 function assessDraft(

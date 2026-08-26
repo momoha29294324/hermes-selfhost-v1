@@ -352,7 +352,7 @@ function normalizeText(value: string): string {
   return value.normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-/** Le handle apparaît-il comme JETON ENTIER ? `atelier` ne doit pas matcher `atelieratelier_`. */
+/** Le handle apparaît-il comme JETON ENTIER ? `atelier` ne doit pas matcher `atelierdemo_`. */
 function mentionsHandleToken(haystack: string, handle: string): boolean {
   const escaped = handle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^a-z0-9._])${escaped}([^a-z0-9._]|$)`, 'i').test(haystack);

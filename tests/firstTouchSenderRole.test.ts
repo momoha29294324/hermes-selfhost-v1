@@ -324,7 +324,7 @@ describe('7 — aucune garde de naturalité n’a bougé', () => {
     ['ATTRIBUTION_JARGON', 'Bonjour, j’ai vu votre compte. Vous suivez vos leads par canal d’acquisition ?'],
     ['PERFORMANCE_OFFER', 'Bonjour, j’ai vu votre travail. On peut tester gratuitement, ça vous irait ?'],
     ['IMMEDIATE_CALL_CTA', 'Bonjour, j’ai vu votre travail, c’est propre. On se cale un appel de quinze minutes ?'],
-    ['FULL_PITCH', 'Bonjour, on aide les detailers à avoir plus de demandes. Ça vous parle ?'],
+    ['FULL_PITCH', 'Bonjour, on aide les artisans à avoir plus de demandes. Ça vous parle ?'],
     ['CORPORATE_JARGON', 'Bonjour, dans le cadre de notre démarche, seriez-vous disponible pour en parler ?'],
   ];
 

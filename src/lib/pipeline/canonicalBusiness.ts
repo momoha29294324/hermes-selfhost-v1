@@ -1,7 +1,7 @@
 import type { BindingKind, IdentityLink } from '@/lib/pipeline/businessContactGuard';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §13-§15 — « cette entreprise existe-t-elle déjà
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §13-§15 — « cette entreprise existe-t-elle déjà
  * dans la base, peu importe la campagne ? »
  *
  * ---------------------------------------------------------------------------

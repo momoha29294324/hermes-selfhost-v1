@@ -4,7 +4,7 @@
  * Deux règles gouvernent chaque ligne produite ici :
  *
  *   1. **Aucun texte de message.** Ni un extrait de réponse de prospect, ni un
- *      brouillon, ni une phrase de un opérateur. Le rendu ne manipule que des codes,
+ *      brouillon, ni une phrase d'un opérateur. Le rendu ne manipule que des codes,
  *      des identifiants et des compteurs — c'est §22 appliqué à l'endroit où il
  *      est le plus facile de le trahir, la sortie.
  *

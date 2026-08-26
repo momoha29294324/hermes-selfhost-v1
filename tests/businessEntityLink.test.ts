@@ -9,7 +9,7 @@ import { resolveBusinessIdentityGroup } from '@/lib/pipeline/businessContactGuar
 import type { Sql } from '@/lib/db/sql';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §13-§14 — l'entité métier, éprouvée sur le
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §13-§14 — l'entité métier, éprouvée sur le
  * scénario DEMOJULIET.
  *
  * Le cas est réel : deux lignes portent `registry_id:484122452`, le même

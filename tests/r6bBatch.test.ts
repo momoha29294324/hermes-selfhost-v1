@@ -136,14 +136,14 @@ describe('sémantique SEND/EDIT/REJECT (§16)', () => {
     await castR6bVote(sql, {
       itemId: itemIds[1]!,
       verdict: 'EDIT',
-      approvedText: 'texte que un opérateur a réécrit',
+      approvedText: 'texte qu’un opérateur a réécrit',
       note: 'reformulé la question',
     });
     const votes = await loadLatestVotes(sql, [itemIds[1]!]);
     const vote = votes.get(itemIds[1]!);
     expect(vote?.verdict).toBe('EDIT');
     expect(vote?.approved).toBe(true);
-    expect(vote?.approvedText).toBe('texte que un opérateur a réécrit');
+    expect(vote?.approvedText).toBe('texte qu’un opérateur a réécrit');
 
     const items = await loadBatchItems(sql, batchId);
     const item = items.find((entry) => entry.id === itemIds[1]);

@@ -625,7 +625,7 @@ const CONTINUING_GOALS: ReadonlySet<ConversationGoal> = new Set<ConversationGoal
  * réellement envoyé » demande « l'ouverture générique a-t-elle été retirée ? »
  * au MÊME lexique que celui qui la juge artificielle. Un second lexique
  * finirait par répondre non ici et oui là, et la correction la plus fréquente
- * de un opérateur deviendrait invisible.
+ * d'un opérateur deviendrait invisible.
  */
 export function openingFamily(body: string): OpeningFamily | null {
   const head = normalizeForMatching(body).trim();

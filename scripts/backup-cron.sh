@@ -6,8 +6,11 @@
 # (dashboard ou CLI) détient déjà le datadir.
 set -eu
 
-REPO_DIR="/Users/mohamedchergui/Developer/hermes"
-NODE_BIN_DIR="/Users/mohamedchergui/.hermes/node/bin"
+# Le depot est celui qui CONTIENT ce script — pas un chemin recopie. Un chemin
+# en dur pointerait le mauvais depot au premier deplacement, et sur une autre
+# machine il ne pointerait rien du tout.
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+NODE_BIN_DIR="${HERMES_NODE_BIN_DIR:-$(dirname "$(command -v node || echo /usr/local/bin/node)")}"
 
 export PATH="$NODE_BIN_DIR:/usr/bin:/bin:/usr/sbin:/sbin"
 

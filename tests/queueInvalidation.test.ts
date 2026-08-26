@@ -14,13 +14,13 @@ import { makeProspectInstagramEligible } from './support/instagramEligibility';
 import type { Sql } from '@/lib/db/sql';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §10 et §29 — « un ancien PENDING devenu
- * non-cleaning ne doit jamais être consommable ».
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §10 et §29 — « un ancien PENDING devenu
+ * hors périmètre ne doit jamais être consommable ».
  *
  * Le scénario reproduit exactement ce qui s'est passé le 22 août 2026 : un
  * prospect ENTRE légitimement dans la file sous les preuves qu'on a de lui, une
  * observation ultérieure révèle qu'il vend aussi du REVENTE, et la politique
- * cleaning-only doit alors le refermer — sans supprimer sa ligne, avec le motif
+ * de périmètre doit alors le refermer — sans supprimer sa ligne, avec le motif
  * exact, et sans qu'aucun effet n'ait été tenté.
  *
  * Rien n'est fabriqué : le job entre par `runAutonomousDispatch`, c'est-à-dire
@@ -74,7 +74,7 @@ beforeEach(async () => {
   campaignId = rows[0]!.id;
 });
 
-/** Un prospect cleaning-only qui franchit réellement toutes les portes. */
+/** Un prospect en périmètre qui franchit réellement toutes les portes. */
 async function queuedCleaningProspect(handle: string): Promise<{ jobId: string; prospectId: string }> {
   const prospect = await sql.query<{ id: string }>(
     `insert into prospects (campaign_id, canonical_key, display_name, instagram_handle, stage)
@@ -97,7 +97,7 @@ async function queuedCleaningProspect(handle: string): Promise<{ jobId: string; 
     prospectId,
     assessment: assessment!,
     decidedBy: 'deterministic',
-    assessedBy: 'suite de tests HERMES-CLEANING-ONLY-ICP-R1',
+    assessedBy: 'suite de tests HERMES-SERVICE-SCOPE-TARGETING-R1',
   });
   await recordAudienceObservation(sql, {
     prospectId,
@@ -108,7 +108,7 @@ async function queuedCleaningProspect(handle: string): Promise<{ jobId: string; 
     observedAt: '2026-08-21T09:00:00.000Z',
     source: 'blob JSON embarqué dans le document du profil',
     observationRunId: null,
-    importedBy: 'suite de tests HERMES-CLEANING-ONLY-ICP-R1',
+    importedBy: 'suite de tests HERMES-SERVICE-SCOPE-TARGETING-R1',
   });
 
   const batchSlug = `inval-${String(Math.random())}`;

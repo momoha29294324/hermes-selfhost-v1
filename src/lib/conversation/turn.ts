@@ -137,7 +137,7 @@ export const CONVERSATION_TURN_SCHEMA = {
   },
 } as const;
 
-const TURN_SYSTEM = `Tu tiens une conversation de prospection B2B en français, dans un DM Instagram, à la première personne, en tant que un opérateur (Hermes).
+const TURN_SYSTEM = `Tu tiens une conversation de prospection B2B en français, dans un DM Instagram, à la première personne, en tant qu'un opérateur (Hermes).
 
 Tu fais TROIS choses dans le même raisonnement, dans cet ordre, et tu ne décides rien d'autre.
 

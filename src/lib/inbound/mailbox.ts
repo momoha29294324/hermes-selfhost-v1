@@ -18,7 +18,7 @@
  * sortant, qui n'expose que trois verbes et qu'aucun appelant ne construit
  * lui-même.
  *
- * Conséquence pratique : lire la boîte de un opérateur avec ce module ne change
+ * Conséquence pratique : lire la boîte d'un opérateur avec ce module ne change
  * rien à ce qu'il verra dans Gmail. Un message ingéré reste non lu.
  *
  * ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@
  * appels réseau supplémentaires. Deux raisons :
  *
  *   1. un aller-retour par champ multiplierait les appels sur une API dont le
- *      quota est partagé avec la boîte personnelle de un opérateur ;
+ *      quota est partagé avec la boîte personnelle d'un opérateur ;
  *   2. deux lectures successives peuvent renvoyer des états différents. Un
  *      en-tête et un corps qui ne viennent pas de la MÊME réponse peuvent se
  *      contredire, et une corrélation bâtie sur deux observations

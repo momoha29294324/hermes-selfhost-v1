@@ -8,7 +8,7 @@
  * Le dépôt savait déjà répondre à « ce tour peut-il partir seul ? »
  * (`autonomy.ts`) et à « où en est la conversation sur l'échelle
  * commerciale ? » (`offerProgression.ts`). Il ne savait pas répondre à la
- * question que un opérateur pose réellement : **cette conversation vaut-elle un
+ * question qu'un opérateur pose réellement : **cette conversation vaut-elle un
  * appel ?**
  *
  * C'est une troisième question, et elle a une réponse différente des deux
@@ -164,7 +164,7 @@ export type HandoffState =
  * premier message est réellement parti, donc les portes de ciblage en vigueur
  * CE JOUR-LÀ étaient vertes. Ce n'est pas une promesse que le prospect passerait
  * les portes d'aujourd'hui — la cible s'est resserrée le 22 août 2026
- * (`hermes-targeting-cleaning-only-r1`) et certains contacts d'avant ne
+ * (`hermes-targeting-service-scope-r1`) et certains contacts d'avant ne
  * repasseraient pas. Rejuger ici serait rouvrir le ciblage, ce que cette
  * mission ne fait pas ; le fait est donc porté avec sa date implicite, et
  * n'autorise rien à lui seul.

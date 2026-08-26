@@ -2,7 +2,7 @@ import { stripAccents } from '@/lib/identity/normalize';
 import type { NicheConfig, NonCleaningServiceFamily } from '@/lib/config/schema';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §3-§7 — « cette entreprise vend-elle UNIQUEMENT
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §3-§7 — « cette entreprise vend-elle UNIQUEMENT
  * du prestation standard ? »
  *
  * ---------------------------------------------------------------------------

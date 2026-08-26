@@ -538,7 +538,7 @@ export async function pollInboundReplies(
  *   2. sinon, des envois existent → on repart du plus ancien, moins la même
  *      marge. Rien d'antérieur au premier envoi ne peut être une réponse ;
  *   3. sinon → une fenêtre courte et fixe. Sans envoi connu, il n'y a rien à
- *      corréler, donc aucune raison de remonter loin dans la boîte de un opérateur.
+ *      corréler, donc aucune raison de remonter loin dans la boîte d'un opérateur.
  */
 export function resolveSince(
   checkpoint: MailboxCheckpoint | null,

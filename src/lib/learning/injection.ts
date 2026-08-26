@@ -76,7 +76,7 @@ function directivesFor(style: OperatorConversationStyle): string[] {
   // §3 — seule une dimension fondée sur des RÉÉCRITURES devient une consigne.
   // Une dimension `VALIDATED_ONLY` dit ce qu'un humain a laissé passer, pas ce
   // qu'il préfère ; l'écrire dans un prompt ferait apprendre au modèle sa
-  // propre voix en croyant apprendre celle de un opérateur.
+  // propre voix en croyant apprendre celle d'un opérateur.
   const supported = (dimension: { value: unknown; basis: string }): boolean =>
     dimension.value !== 'UNKNOWN' && dimension.basis === 'REWRITTEN';
 

@@ -407,7 +407,7 @@ interface Candidate {
  * `PREMIUM_SERVICE` n'est pas monté plus haut, et la raison est le CIBLAGE :
  * ses valeurs réelles sont « protection retouche avancee » (71), « traitement
  * retouche avancee » (65), « colorimétrie », « studio haut de gamme ». Sous
- * HERMES-CLEANING-ONLY-ICP-R1 ces entreprises sont hors cible autonome, et
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 ces entreprises sont hors cible autonome, et
  * ouvrir sur leur retouche avancée reviendrait à mieux personnaliser un message qui
  * ne doit pas partir.
  *

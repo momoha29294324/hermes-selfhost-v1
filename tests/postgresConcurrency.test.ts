@@ -467,7 +467,7 @@ describeIfPostgres('prise de job Instagram, multi-worker (IG-R1 §3)', () => {
     const ids = [
       await enqueueJob('demo_prospect_a'),
       await enqueueJob('example_services_'),
-      await enqueueJob('prestationautolyon'),
+      await enqueueJob('demo_account_31'),
     ];
 
     const claimed = await Promise.all(

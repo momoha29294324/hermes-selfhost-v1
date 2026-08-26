@@ -19,7 +19,7 @@
 -- `r6b_reply_drafts`, `r6b_prospect_outreach_states`,
 -- `r6b_prospect_state_transitions`, `r6b_alerts`). Un CRM externe n'est pas
 -- la source de vérité : c'en est une COPIE, utile le jour où quelqu'un d'autre
--- que un opérateur doit lire le dossier.
+-- qu'un opérateur doit lire le dossier.
 --
 -- ---------------------------------------------------------------------------
 -- Ce que cette migration NE fait PAS

@@ -3,7 +3,7 @@ import { loadNiche } from '@/lib/config/load';
 import { assessServiceScope, type ServiceScopeAssessment } from '@/lib/pipeline/serviceScope';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 — la couche BASE de `serviceScope`.
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 — la couche BASE de `serviceScope`.
  *
  * Même séparation que partout ailleurs dans ce répertoire
  * (`serviceFitObservation` / `coreServiceFit`, `audienceObservation` /

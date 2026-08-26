@@ -23,7 +23,13 @@ set -eu
 # repointé sur le workspace canonique depuis. La ligne ci-dessous, elle, était
 # restée juste — c'est la propriété qui compte, pas la phrase qui la décrit.
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-NODE_BIN_DIR="${HERMES_NODE_BIN_DIR:-/Users/mohamedchergui/.hermes/node/bin}"
+# Le repertoire des binaires Node.
+#
+# `command -v node` plutot qu'un chemin ecrit en dur : ce script est lance par
+# launchd, qui ne donne aucun PATH utilisable — mais l'installation, elle, sait
+# ou Node vit. `HERMES_NODE_BIN_DIR` reste la surcharge explicite quand Node
+# n'est pas sur le PATH du shell d'installation (nvm, asdf, Homebrew).
+NODE_BIN_DIR="${HERMES_NODE_BIN_DIR:-$(dirname "$(command -v node || echo /usr/local/bin/node)")}"
 
 # Le classifieur entrant n'est pas un module : c'est le binaire `codex`, que
 # `CodexCliProvider` lance par son nom nu (`OUTBOUND_CODEX_BIN`, défaut

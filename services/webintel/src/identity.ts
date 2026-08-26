@@ -284,7 +284,7 @@ export function nameSimilarity(a: string, b: string): number {
 
 /**
  * The readable part of a domain, as a name-like string.
- * `demo-39-exemple.fr` -> `northstar studio`, `am-demo-55.example.com` -> `am demo_account_31`.
+ * `demo-39-exemple.fr` -> `demo 39 exemple`, `am-demo-55.example.com` -> `am demo 55`.
  */
 export function domainCoreAsName(domain: string): string {
   const core = domain.split('.')[0] ?? '';

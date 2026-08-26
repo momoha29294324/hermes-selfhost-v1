@@ -28,7 +28,13 @@ set -eu
 
 # Le dépôt est celui qui CONTIENT ce script — pas un chemin recopié.
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-NODE_BIN_DIR="${HERMES_NODE_BIN_DIR:-/Users/mohamedchergui/.hermes/node/bin}"
+# Le repertoire des binaires Node.
+#
+# `command -v node` plutot qu'un chemin ecrit en dur : ce script est lance par
+# launchd, qui ne donne aucun PATH utilisable — mais l'installation, elle, sait
+# ou Node vit. `HERMES_NODE_BIN_DIR` reste la surcharge explicite quand Node
+# n'est pas sur le PATH du shell d'installation (nvm, asdf, Homebrew).
+NODE_BIN_DIR="${HERMES_NODE_BIN_DIR:-$(dirname "$(command -v node || echo /usr/local/bin/node)")}"
 
 # Même PATH construit que les deux autres rails, et pour la même raison :
 # launchd n'en donne aucun d'utilisable, et un binaire lancé par son nom nu

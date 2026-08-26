@@ -2,7 +2,7 @@
 -- (mission « Hermes R6B-B — Dispatch Manifest + Learning Telemetry »).
 --
 -- R6B-A a produit un batch approuvé (5/5 SEND, migration 0018). R6B-B ne
--- décide rien à la place de un opérateur : elle fige, une fois qu'il a choisi un
+-- décide rien à la place d'un opérateur : elle fige, une fois qu'il a choisi un
 -- canal et une destination dans `/pilot/r6b-dispatch`, exactement ce qu'un
 -- futur envoi devra reproduire — prospect, texte, canal, destinataire — sous
 -- une forme qu'un sender ne pourra pas réinterpréter au moment d'envoyer.

@@ -25,7 +25,7 @@ import {
  *
  * Ce module ne décide jamais un transport ni un destinataire à la place de
  * un opérateur (§4/§5/§9 de R6B-B.1 : « Ne jamais inférer un transport » /
- * « Ne choisis PAS à la place de un opérateur »). Il fait deux choses :
+ * « Ne choisis PAS à la place d'un opérateur »). Il fait deux choses :
  *
  *   1. Répondre honnêtement à « qu'est-ce qui est réellement observable et
  *      vérifiable pour ce prospect ? » (`resolveTransportOptions`,
@@ -34,7 +34,7 @@ import {
  *      prouve par construction qu'un appel (`phone_call`) ; un SMS ou un
  *      WhatsApp exigent chacun une preuve distincte de la simple présence du
  *      numéro (R6B-B.1 §4 — jamais « numéro observé → donc SMS/WhatsApp »).
- *   2. Figer, une fois que un opérateur a choisi, exactement ce qu'un futur envoi
+ *   2. Figer, une fois qu'un opérateur a choisi, exactement ce qu'un futur envoi
  *      devra reproduire (`lockManifestForItem`) — jamais un envoi lui-même.
  *      Aucune fonction ici n'ouvre de connexion réseau, n'appelle un
  *      provider d'envoi, ni n'écrit dans `outreach_events`.

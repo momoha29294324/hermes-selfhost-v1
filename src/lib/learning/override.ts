@@ -1,8 +1,8 @@
 /**
- * LEARNING-R1 §6 — ce que un opérateur a changé, dit en ABSTRAIT.
+ * LEARNING-R1 §6 — ce qu'un opérateur a changé, dit en ABSTRAIT.
  *
  * Le cœur de la mission tient dans une distinction que ce fichier matérialise :
- * on n'apprend pas « le texte de un opérateur », on apprend **la transformation**
+ * on n'apprend pas « le texte d'un opérateur », on apprend **la transformation**
  * qu'il applique au brouillon. La différence n'est pas cosmétique.
  *
  *   * un texte appris deviendrait un gabarit, et un gabarit réécrit le même
@@ -36,7 +36,7 @@ import { detectAddressMode } from '@/lib/conversation/style';
  * Les transformations reconnues.
  *
  * Elles vont par paires opposées, et c'est délibéré : un système qui ne saurait
- * détecter que « plus court » apprendrait que un opérateur raccourcit toujours,
+ * détecter que « plus court » apprendrait qu'un opérateur raccourcit toujours,
  * puisqu'il n'aurait pas le vocabulaire pour observer le contraire. Une boucle
  * d'apprentissage qui ne peut pas se contredire ne mesure rien.
  */

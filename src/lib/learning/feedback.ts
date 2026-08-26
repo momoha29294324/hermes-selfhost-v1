@@ -20,7 +20,7 @@
  *      le modèle a écrit, `r6b_batch_votes.approved_text` ce qu'un humain a
  *      validé. Seuls les votes `actor_kind = 'HUMAN'` comptent : un vote
  *      `AUTONOMOUS_POLICY` est une machine qui approuve une machine, et
- *      l'apprendre comme une préférence de un opérateur serait apprendre un écho ;
+ *      l'apprendre comme une préférence d'un opérateur serait apprendre un écho ;
  *
  *   2. **les réponses** — `r6b_reply_drafts.body` contre `human_text`, quand un
  *      humain a réécrit (`EDITED`) ou validé tel quel (`APPROVED`).

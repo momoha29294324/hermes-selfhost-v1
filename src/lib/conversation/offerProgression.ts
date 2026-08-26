@@ -21,7 +21,7 @@
  * §11 — le modèle de rémunération, et pourquoi il ne peut pas partir seul
  * ---------------------------------------------------------------------------
  * « Nos intérêts sont alignés : notre rémunération dépend des résultats » est
- * un POSITIONNEMENT que un opérateur envisage, et c'est légitime. Ce n'est pas une
+ * un POSITIONNEMENT qu'un opérateur envisage, et c'est légitime. Ce n'est pas une
  * tournure : c'est une condition commerciale. Tant que ses termes exacts — sur
  * quoi porte la rémunération, à partir de quand, avec quelle contrepartie —
  * n'existent nulle part dans ce dépôt, une machine qui l'écrirait engagerait

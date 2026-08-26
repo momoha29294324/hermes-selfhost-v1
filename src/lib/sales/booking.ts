@@ -13,7 +13,7 @@
  * L'audit du 22 août 2026 — ce qui a été cherché, ce qui existe
  * ---------------------------------------------------------------------------
  * La question était : un mécanisme de réservation Hermes existe-t-il, tel
- * qu'un prospect puisse prendre un créneau dans l'agenda de un opérateur ? Neuf
+ * qu'un prospect puisse prendre un créneau dans l'agenda d'un opérateur ? Neuf
  * surfaces ont été relues, et pas depuis la mémoire :
  *
  *   * `config/` — aucune entrée de calendrier, de créneau ni de réservation.

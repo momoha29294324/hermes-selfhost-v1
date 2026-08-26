@@ -4,7 +4,7 @@ import { invalidateQueueUnderCurrentPolicy } from '@/lib/instagram/queueInvalida
 import { AUTONOMOUS_POLICY_VERSION } from '@/lib/instagram/autonomousPolicy';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §10 — refermer les jobs qu'une politique nouvelle
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §10 — refermer les jobs qu'une politique nouvelle
  * n'autorise plus, sans en supprimer un seul.
  *
  *   npm run ig:queue:invalidate                          # lecture seule
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
     const out = (line: string): void => void process.stdout.write(`${line}\n`);
 
     out('');
-    out(`HERMES-CLEANING-ONLY-ICP-R1 — file rejouée ${apply ? '(APPLIQUÉ)' : '(LECTURE SEULE)'}`);
+    out(`HERMES-SERVICE-SCOPE-TARGETING-R1 — file rejouée ${apply ? '(APPLIQUÉ)' : '(LECTURE SEULE)'}`);
     out(`  politique                 ${AUTONOMOUS_POLICY_VERSION}`);
     if (apply) out(`  opérateur                 ${report.operator}`);
     out(`  jobs ouverts examinés     ${String(report.jobs.length)}`);

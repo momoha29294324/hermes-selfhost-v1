@@ -93,7 +93,7 @@ export interface CompleteEmailSubjectInput {
   readonly subject: string;
   /**
    * Empreinte du payload complété telle qu'affichée dans l'écran de
-   * confirmation. Recalculée ici et exigée identique : ce que un opérateur a
+   * confirmation. Recalculée ici et exigée identique : ce qu'un opérateur a
    * validé est exactement ce qui sera figé, pas un payload reconstruit
    * autrement entre l'affichage et l'écriture.
    */

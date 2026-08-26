@@ -84,7 +84,7 @@ export class TransportPayloadError extends Error {
  *     prouve rien.
  *
  * Volontairement pas de normalisation Unicode (NFC/NFD) : normaliser
- * changerait la chaîne que un opérateur a réellement approuvée. Deux écritures
+ * changerait la chaîne qu'un opérateur a réellement approuvée. Deux écritures
  * Unicode distinctes du même glyphe sont deux valeurs distinctes, et
  * l'empreinte le dit.
  */

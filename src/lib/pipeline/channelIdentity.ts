@@ -126,7 +126,7 @@ export async function listChannelIdentityDecisions(
 /**
  * Normalise un destinataire Instagram saisi par un humain.
  *
- * Accepte `atelieratelier_`, `@atelieratelier_`, et rien d'autre — ni URL,
+ * Accepte `atelierdemo_`, `@atelierdemo_`, et rien d'autre — ni URL,
  * ni espace, ni casse imposée. La forme retenue est celle que le lock fige
  * (`INSTAGRAM_HANDLE`, partagée avec l'adapter transport), pour qu'une
  * confirmation et un manifeste parlent littéralement du même objet.
@@ -140,7 +140,7 @@ export function normalizeInstagramRecipient(raw: string): string {
     throw new ChannelIdentityError(
       'RECIPIENT_SHAPE_INVALID',
       `« ${raw} » n'a pas la forme d'un handle Instagram (lettres, chiffres, « . » et « _ », 30 au plus). ` +
-        'Attendu : le handle tel qu\'il s\'affiche, sans URL — par exemple « atelieratelier_ ».',
+        'Attendu : le handle tel qu\'il s\'affiche, sans URL — par exemple « atelierdemo_ ».',
     );
   }
   return trimmed;

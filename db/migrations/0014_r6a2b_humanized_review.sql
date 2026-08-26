@@ -7,12 +7,12 @@
 --
 --   R6A.1 et R6A.2 comparaient plusieurs stratégies à l'aveugle : le mapping
 --   réel vivait dans une table que l'écran de vote ne lisait jamais, pour ne
---   pas influencer le choix de un opérateur.
+--   pas influencer le choix d'un opérateur.
 --
 --   R6A.2b ne compare plus rien (§13 : « Cette fois pas blind »). Un seul
 --   message par prospect, jugé directement : SEND / EDIT / REJECT. Il n'y a
 --   donc ni permutation d'affichage à cacher, ni reveal différé — juste un
---   verdict et, pour EDIT, le texte final tel que un opérateur l'a corrigé.
+--   verdict et, pour EDIT, le texte final tel qu'un opérateur l'a corrigé.
 --
 -- Le texte édité est stocké tel quel (`edited_body`), jamais recalculé ni
 -- re-validé par un garde-fou : c'est la dernière main humaine avant un envoi
@@ -37,7 +37,7 @@ create table r6a2b_review_votes (
   item_id       uuid not null references r6a2b_review_items(id) on delete cascade,
   prospect_ref  text not null,
   verdict       text not null check (verdict in ('SEND', 'EDIT', 'REJECT')),
-  -- Le texte final tel que un opérateur l'a laissé dans le champ d'édition.
+  -- Le texte final tel qu'un opérateur l'a laissé dans le champ d'édition.
   -- Rempli pour SEND (texte inchangé) et EDIT (texte corrigé) ; nul pour
   -- REJECT, où aucun texte final n'existe.
   edited_body   text,

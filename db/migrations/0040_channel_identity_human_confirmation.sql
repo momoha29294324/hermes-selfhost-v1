@@ -16,7 +16,7 @@
 --
 -- Le 14 août 2026, un humain a pris une décision que ce champ ne sait pas
 -- porter : le site officiel `example.com` publie lui-même un appel à
--- l'action vers `https://www.instagram.com/atelieratelier_/`, donc ce compte
+-- l'action vers `https://www.instagram.com/atelierdemo_/`, donc ce compte
 -- Instagram est celui que l'entreprise présente. C'est une provenance de CANAL,
 -- observée par un humain, et elle ne dit rien du SIREN, du SIRET, ni de
 -- l'adresse légale.
@@ -98,7 +98,7 @@ create table channel_identity_decisions (
   -- désigné : un handle Instagram sans `@`, une adresse e-mail, un numéro.
   --
   -- C'est la clé de toute la garantie demandée par la mission : « une
-  -- confirmation de @atelieratelier_ ne doit pas valider silencieusement un
+  -- confirmation de @atelierdemo_ ne doit pas valider silencieusement un
   -- futur autre handle du prospect ». Le gate compare ce que le manifeste a
   -- figé à cette valeur ; si le destinataire change, plus rien ne correspond et
   -- la décision cesse de satisfaire la porte — sans qu'aucun code n'ait à

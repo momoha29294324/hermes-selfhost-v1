@@ -5,7 +5,7 @@ import type { PostgresConfig } from '@/lib/db/config';
 import type { Sql } from '@/lib/db/sql';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §29 — la migration 0052 et ses contraintes, sur
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §29 — la migration 0052 et ses contraintes, sur
  * un vrai PostgreSQL.
  *
  * Le reste de la suite tourne sur PGlite, qui est du vrai Postgres compilé en
@@ -43,17 +43,17 @@ function config(applicationName: string): PostgresConfig {
   };
 }
 
-const SLUG = 'cleaning-only-r1-migration';
+const SLUG = 'service-scope-r1-migration';
 const KEY_PREFIX = 'registry_id:CLEANINGR1';
 
-describeIfPostgres('HERMES-CLEANING-ONLY-ICP-R1 — migration 0052 sur PostgreSQL réel', () => {
+describeIfPostgres('HERMES-SERVICE-SCOPE-TARGETING-R1 — migration 0052 sur PostgreSQL réel', () => {
   let sql: Sql;
   let campaignId: string;
   let prospectId: string;
   let manifestId: string | null = null;
 
   beforeAll(async () => {
-    sql = await createPostgresSql(config('hermes-cleaning-only-migration'));
+    sql = await createPostgresSql(config('hermes-service-scope-migration'));
     await migrate(sql);
 
     await sql.query(`delete from business_entities where canonical_key like $1`, [`${KEY_PREFIX}%`]);

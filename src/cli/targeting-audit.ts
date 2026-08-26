@@ -6,8 +6,8 @@ import { assessMarketScope } from '@/lib/pipeline/marketScope';
 import { AUTONOMOUS_POLICY_VERSION } from '@/lib/instagram/autonomousPolicy';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §11-§12, §21 — le corpus entier relu sous la
- * politique cleaning-only.
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §11-§12, §21 — le corpus entier relu sous la
+ * politique de périmètre de service.
  *
  *   npm run targeting:audit                 # tout le corpus
  *   npm run targeting:audit -- --campaign hermes-fresh-supply-r1
@@ -139,7 +139,7 @@ async function main(): Promise<void> {
 
     const out = (line: string): void => void process.stdout.write(`${line}\n`);
     out('');
-    out(`HERMES-CLEANING-ONLY-ICP-R1 — audit de ciblage (LECTURE SEULE)`);
+    out(`HERMES-SERVICE-SCOPE-TARGETING-R1 — audit de ciblage (LECTURE SEULE)`);
     out(`  politique                 ${AUTONOMOUS_POLICY_VERSION}`);
     out(`  périmètre                 ${campaign ?? 'tout le corpus'}`);
     out(`  lignes prospects          ${String(rows.length)}`);

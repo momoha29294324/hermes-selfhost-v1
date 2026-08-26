@@ -5,7 +5,7 @@ import { recordJobEvent } from '@/lib/instagram/events';
 import { isTerminalSkip, type InstagramSkipReason } from '@/lib/instagram/types';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §10 — refermer, proprement, les jobs qu'une
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §10 — refermer, proprement, les jobs qu'une
  * politique nouvelle n'autorise plus.
  *
  * ---------------------------------------------------------------------------

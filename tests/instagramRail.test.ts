@@ -450,7 +450,7 @@ describe('vérification d’identité', () => {
     expect(normalizeHandle('detail car')).toBeNull();
     expect(normalizeHandle('a'.repeat(31))).toBeNull();
     // Un point EST significatif : deux handles distincts restent distincts.
-    expect(normalizeHandle('demo_account_29')).not.toBe(normalizeHandle('demo_account_31'));
+    expect(normalizeHandle('demo.account_29')).not.toBe(normalizeHandle('demo_account_29'));
   });
 
   it('extrait un handle d’une URL de profil et refuse tout le reste', () => {

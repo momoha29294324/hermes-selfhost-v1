@@ -46,8 +46,8 @@ import type { DirectionBasis } from '@/lib/instagram/inboundThread';
  *                     avec son statut, ce qui est autre chose que d'être
  *                     rattaché à quelqu'un.
  *
- * Ce que l'échelle ne contient PAS, délibérément : le nom d'affichage. « Car
- * Wash Atelier » n'est pas `atelieratelier_`, et deux entreprises peuvent
+ * Ce que l'échelle ne contient PAS, délibérément : le nom d'affichage. « Atelier
+ * Demo » n'est pas `atelierdemo_`, et deux entreprises peuvent
  * porter le même nom. Aucun chemin ci-dessous ne lit un nom d'affichage.
  */
 

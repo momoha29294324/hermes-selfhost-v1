@@ -36,7 +36,7 @@ export type PreferredLength = 'VERY_SHORT' | 'SHORT' | 'MEDIUM' | 'LONG';
  * moyens » ne sont pas la même affirmation. La première demande qu'il ait
  * RÉÉCRIT quelque chose ; la seconde dit seulement qu'il a laissé passer ce
  * qu'un modèle avait produit. Confondre les deux fait apprendre au système sa
- * propre voix en croyant apprendre celle de un opérateur — l'erreur exacte que §3
+ * propre voix en croyant apprendre celle d'un opérateur — l'erreur exacte que §3
  * décrit, appliquée au style au lieu de la performance.
  *
  *   REWRITTEN      — au moins un texte retenu diffère du brouillon. Préférence.
@@ -149,7 +149,7 @@ function basisOf(observations: readonly OverrideObservation[]): DimensionBasis {
  * Une dimension binaire : « il retire » contre « il garde ».
  *
  * Le dénominateur est le nombre d'OCCASIONS, pas le nombre de tours : on ne
- * peut pas observer que un opérateur retire une ouverture générique sur un
+ * peut pas observer qu'un opérateur retire une ouverture générique sur un
  * brouillon qui n'en portait pas. Compter ces tours-là au dénominateur ferait
  * baisser le taux à mesure que le modèle s'améliore — la mesure dirait alors le
  * contraire de ce qui se passe.
@@ -237,7 +237,7 @@ export function buildOperatorStyleProfile(input: VoiceProfileInput): OperatorCon
   /**
    * Les couples où un humain a RÉELLEMENT réécrit.
    *
-   * Toutes les dimensions qui affirment quelque chose sur le geste de un opérateur
+   * Toutes les dimensions qui affirment quelque chose sur le geste d'un opérateur
    * — il coupe, il garde, il simplifie — sont calculées sur ce sous-ensemble et
    * sur aucun autre. Les calculer sur l'ensemble reviendrait à mesurer ce que
    * le modèle écrit et à l'attribuer à un opérateur : sur un corpus où il approuve

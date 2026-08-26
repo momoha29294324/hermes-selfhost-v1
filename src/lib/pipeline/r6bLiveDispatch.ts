@@ -843,7 +843,7 @@ async function recordReconcileNote(sql: Sql, liveAttemptId: string, note: string
  *   2. la requête n'était jamais arrivée → le rejeu l'envoie, et c'est le
  *      premier et unique envoi de ce manifeste.
  *
- * Dans les deux cas : exactement un email, celui que un opérateur a approuvé. Ce
+ * Dans les deux cas : exactement un email, celui qu'un opérateur a approuvé. Ce
  * n'est donc pas une nouvelle intention commerciale, c'est la même, poursuivie
  * jusqu'à une issue connue — d'où l'interdiction absolue d'y toucher à la clé
  * (§2B) : une clé neuve ferait du monde 1 un double envoi.

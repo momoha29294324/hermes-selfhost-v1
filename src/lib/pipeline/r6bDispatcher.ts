@@ -210,7 +210,7 @@ export function buildDispatchEnvelope(manifest: DispatchManifest): DispatchEnvel
   }
 
   // Le contrôle central : le texte porté par la ligne est-il encore
-  // exactement celui que un opérateur a approuvé ? Recalculé, jamais supposé.
+  // exactement celui qu'un opérateur a approuvé ? Recalculé, jamais supposé.
   const recomputed = sha256Hex(approvedText);
   if (recomputed !== manifest.approvedTextSha256) {
     throw new DispatchBlockedError(

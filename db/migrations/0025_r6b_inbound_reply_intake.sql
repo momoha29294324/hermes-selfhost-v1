@@ -5,7 +5,7 @@
 -- Jusqu'ici le dépôt ne savait qu'écrire vers l'extérieur, et une seule fois :
 -- un manifeste verrouillé, un envoi, un `outreach_event`. Il ne savait rien
 -- lire. Cette migration pose ce qui manque pour qu'une réponse existe dans le
--- système autrement que dans la boîte mail de un opérateur : une table de messages
+-- système autrement que dans la boîte mail d'un opérateur : une table de messages
 -- entrants, un curseur de boîte, et un registre de jetons de réponse.
 --
 -- Ce qu'elle ne fait pas, et ne peut pas faire :
@@ -275,7 +275,7 @@ create index r6b_inbound_messages_thread_idx on r6b_inbound_messages (provider, 
 --
 -- Sans curseur, un poller relit la boîte entière à chaque exécution : coûteux,
 -- et surtout intrusif — la mission borne explicitement la lecture à ce qui
--- concerne l'outbound (§13), pas à la vie privée de un opérateur.
+-- concerne l'outbound (§13), pas à la vie privée d'un opérateur.
 --
 -- Gmail documente deux primitives, et elles ne se remplacent pas :
 --

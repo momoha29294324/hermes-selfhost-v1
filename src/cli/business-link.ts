@@ -3,7 +3,7 @@ import { getSql } from '@/lib/db';
 import { linkBusinessEntities } from '@/lib/pipeline/businessEntityLink';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §13-§14 — « cette entreprise existe-t-elle déjà
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §13-§14 — « cette entreprise existe-t-elle déjà
  * dans la base, peu importe la campagne ? »
  *
  *   npm run business:link                        # lecture seule : ce qui SERAIT rattaché
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
     const out = (line: string): void => void process.stdout.write(`${line}\n`);
 
     out('');
-    out(`HERMES-CLEANING-ONLY-ICP-R1 — entités métier ${apply ? '(APPLIQUÉ)' : '(LECTURE SEULE)'}`);
+    out(`HERMES-SERVICE-SCOPE-TARGETING-R1 — entités métier ${apply ? '(APPLIQUÉ)' : '(LECTURE SEULE)'}`);
     if (apply) out(`  opérateur                 ${operator ?? ''}`);
     out(`  lignes examinées          ${String(report.prospectsScanned)}`);
     out(`  lignes rattachées         ${String(report.prospectsLinked)}`);

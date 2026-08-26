@@ -33,7 +33,7 @@ create table r6a2c_review_votes (
   item_id       uuid not null references r6a2c_review_items(id) on delete cascade,
   prospect_ref  text not null,
   verdict       text not null check (verdict in ('SEND', 'EDIT', 'REJECT')),
-  -- Le texte final tel que un opérateur l'a laissé dans le champ d'édition.
+  -- Le texte final tel qu'un opérateur l'a laissé dans le champ d'édition.
   -- Rempli pour SEND (texte inchangé) et EDIT (texte corrigé) ; nul pour
   -- REJECT, où aucun texte final n'existe.
   edited_body   text,

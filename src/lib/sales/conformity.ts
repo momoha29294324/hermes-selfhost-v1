@@ -14,7 +14,7 @@
  * Il constate deux choses DÉJÀ écrites par d'autres :
  *
  *   * un refus de ciblage TERMINAL enregistré sur la file d'envoi. La cible
- *     s'est resserrée le 22 août 2026 (`hermes-targeting-cleaning-only-r1`), et
+ *     s'est resserrée le 22 août 2026 (`hermes-targeting-service-scope-r1`), et
  *     des prospects contactés sous l'ancienne règle ont été écartés depuis.
  *     Proposer un appel à ceux-là ferait perdre son temps à un opérateur — c'est le
  *     seul coût que la qualification de rendez-vous doit vraiment éviter ;

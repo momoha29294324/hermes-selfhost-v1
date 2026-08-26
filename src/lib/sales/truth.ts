@@ -40,7 +40,7 @@
  * ce qui a réellement tranché.
  */
 export const TRUTH_TIERS = Object.freeze([
-  /** Ce que un opérateur a décidé, explicitement, pour cette entreprise. */
+  /** Ce qu'un opérateur a décidé, explicitement, pour cette entreprise. */
   'EXPLICIT_BUSINESS_POLICY',
   /** Les invariants déterministes de sécurité et de politique — le code des gardes. */
   'DETERMINISTIC_INVARIANT',
@@ -114,7 +114,7 @@ export const EXPERT_PRINCIPLE_TIER: TruthTier = 'EXPERT_SOURCE_PRINCIPLE';
  */
 export function renderTruthHierarchy(): string {
   const labels: Readonly<Record<TruthTier, string>> = Object.freeze({
-    EXPLICIT_BUSINESS_POLICY: 'politique explicite de un opérateur / de l’entreprise',
+    EXPLICIT_BUSINESS_POLICY: 'politique explicite d’un opérateur / de l’entreprise',
     DETERMINISTIC_INVARIANT: 'invariant déterministe de sécurité ou de politique (le code des gardes)',
     HERMES_OUTCOME_DATA: 'résultats Hermes réels, sur un effectif suffisant',
     VALIDATED_HERMES_PLAYBOOK: 'playbook Hermes validé',

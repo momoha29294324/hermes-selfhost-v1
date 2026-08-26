@@ -75,7 +75,7 @@ export const commercialQueryTiersSchema = z
     secondary: z.array(z.string().min(2)).default([]),
     serviceSpecific: z.array(z.string().min(2)).default([]),
     /**
-     * HERMES-CLEANING-ONLY-ICP-R1 §18 — le vocabulaire qui cherche des
+     * HERMES-SERVICE-SCOPE-TARGETING-R1 §18 — le vocabulaire qui cherche des
      * PRESTATAIRES, et rien d'autre.
      *
      * Les trois paliers ci-dessus ont été écrits sous un ICP qui accueillait la
@@ -88,7 +88,7 @@ export const commercialQueryTiersSchema = z
      *
      * Ce palier est la réponse en amont. Il ne remplace pas les autres, qui
      * gardent leur sens pour un ICP plus large ; il donne à une campagne
-     * cleaning-only de quoi chercher ce qu'elle veut vraiment trouver.
+     * en périmètre de quoi chercher ce qu'elle veut vraiment trouver.
      */
     inScope: z.array(z.string().min(2)).default([]),
   })
@@ -153,7 +153,7 @@ export const coreServiceFitSchema = z
 export type CoreServiceFitConfig = z.infer<typeof coreServiceFitSchema>;
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §3 — une famille de prestation NON-PRESTATION STANDARD.
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §3 — une famille de prestation NON-PRESTATION STANDARD.
  *
  * À ne pas confondre avec `serviceSpecialistFamilySchema`, qui décrivait une
  * spécialité de NOTRE métier dont on mesurait la dominance. Celle-ci décrit une
@@ -244,7 +244,7 @@ export const nicheSchema = z.object({
    */
   coreServiceFit: coreServiceFitSchema,
   /**
-   * HERMES-CLEANING-ONLY-ICP-R1 §3-§7 — la partition PRESTATION STANDARD / NON-PRESTATION STANDARD,
+   * HERMES-SERVICE-SCOPE-TARGETING-R1 §3-§7 — la partition PRESTATION STANDARD / NON-PRESTATION STANDARD,
    * lue par `assessServiceScope` et par la seule politique autonome.
    *
    * Elle ne remplace pas `coreServiceFit` et ne le modifie pas : les verdicts

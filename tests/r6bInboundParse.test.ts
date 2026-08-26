@@ -710,7 +710,7 @@ describe('buildInboxQuery', () => {
     expect(q).toContain('-in:sent');
     expect(q).toContain('-in:draft');
     // R6B-D1.3 : le bug d'origine bornait sur la boîte lue elle-même
-    // (`to:`/`deliveredto:` de la boîte de un opérateur), ce qui n'est aucune
+    // (`to:`/`deliveredto:` de la boîte d'un opérateur), ce qui n'est aucune
     // borne — tout message livré y porte forcément ces en-têtes.
     expect(q).not.toContain('to:');
     expect(q).not.toContain('deliveredto:');

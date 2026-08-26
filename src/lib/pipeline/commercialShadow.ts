@@ -550,7 +550,7 @@ export interface CalibrationEntry {
 }
 
 /**
- * Choisit les ~30 cas que un opérateur doit relire pour trancher R7.2.
+ * Choisit les ~30 cas qu'un opérateur doit relire pour trancher R7.2.
  *
  * La sélection est faite par PANIERS et non par le haut du classement, et c'est
  * le point : un jeu composé des trente meilleurs prospects ne peut confirmer

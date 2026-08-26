@@ -66,7 +66,7 @@ export const CHANNEL_TO_TRANSPORT: Readonly<Record<ChannelKey, string>> = Object
  *
  * Deux verrous plutôt qu'un, et l'ordre compte :
  *
- *   - `channels.selectable` (config) porte la DÉCISION PRODUIT de un opérateur —
+ *   - `channels.selectable` (config) porte la DÉCISION PRODUIT d'un opérateur —
  *     « pour l'outbound automatique actuel, instagram ou email » ;
  *   - cette constante porte la CAPACITÉ du dépôt, et elle est en code parce
  *     qu'un fichier de configuration ne doit pas pouvoir déclarer sélectionnable

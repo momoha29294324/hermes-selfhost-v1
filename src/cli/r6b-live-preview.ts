@@ -20,7 +20,7 @@
  *     pas.
  *
  * Le corps est imprimé mot pour mot, jamais résumé ni tronqué : le point de
- * cette commande est précisément que un opérateur lise ce qui partira, et non un
+ * cette commande est précisément qu'un opérateur lise ce qui partira, et non un
  * résumé de ce qui partira.
  */
 import { getSql } from '@/lib/db';

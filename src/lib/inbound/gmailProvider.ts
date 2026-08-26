@@ -232,8 +232,8 @@ export function gmailDate(date: Date): string {
  * R6B-D1.3 — pourquoi ce n'est PAS `to:`/`deliveredto:` sur la boîte lue
  * ===========================================================================
  *
- * La version précédente bornait sur `to:<boîte de un opérateur>` /
- * `deliveredto:<boîte de un opérateur>`. C'est une non-borne : TOUT message livré
+ * La version précédente bornait sur `to:<boîte d'un opérateur>` /
+ * `deliveredto:<boîte d'un opérateur>`. C'est une non-borne : TOUT message livré
  * dans une boîte porte forcément cette boîte en `To:` ou `Delivered-To:` —
  * c'est la définition même d'être dans la boîte. La requête produite
  * équivalait donc à « tout ce qui est arrivé après telle date », exactement
@@ -606,7 +606,7 @@ export class GmailRestApi implements GmailApi {
   }): Promise<GmailListMessagesResponse> {
     const search = new URLSearchParams({ q: params.q, maxResults: String(params.maxResults) });
     // `includeSpamTrash` reste à sa valeur par défaut (false) : la boîte lue
-    // est celle de un opérateur, et aspirer son spam pour y chercher une réponse
+    // est celle d'un opérateur, et aspirer son spam pour y chercher une réponse
     // ferait entrer en base tout ce qu'un filtre a déjà écarté. Le prix est
     // dit plutôt que caché — une réponse classée en spam ne sera pas vue.
     if (params.pageToken !== null) search.set('pageToken', params.pageToken);

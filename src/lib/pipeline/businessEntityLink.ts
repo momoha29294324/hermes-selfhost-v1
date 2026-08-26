@@ -3,7 +3,7 @@ import { canonicalBusinessKey, electRepresentative } from '@/lib/pipeline/canoni
 import { BINDING_KINDS, type BindingKind, type IdentityLink } from '@/lib/pipeline/businessContactGuard';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §13-§14 — la PASSE qui rattache les lignes de
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §13-§14 — la PASSE qui rattache les lignes de
  * campagne à leur entité métier.
  *
  * ---------------------------------------------------------------------------

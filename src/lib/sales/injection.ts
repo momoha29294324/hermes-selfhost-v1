@@ -6,7 +6,7 @@
  * §36 — un rail à part, qui ne réveille pas l'autre
  * ---------------------------------------------------------------------------
  * `OUTBOUND_LEARNING_INJECTION_ENABLED` gouverne la boucle d'APPRENTISSAGE —
- * ce que les corrections de un opérateur ont montré. Il reste à `0`, ce round ne le
+ * ce que les corrections d'un opérateur ont montré. Il reste à `0`, ce round ne le
  * lit pas, ne l'écrit pas, et ne le mentionne que pour dire qu'il n'y touche
  * pas. Les deux injections répondent à deux questions différentes : « qu'a-t-on
  * observé sur nos propres corrections ? » et « qu'a-t-on appris d'une source

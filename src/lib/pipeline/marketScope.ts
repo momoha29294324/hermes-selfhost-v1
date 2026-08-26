@@ -1,5 +1,5 @@
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §17 — « ce commerce est-il seulement sur notre
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §17 — « ce commerce est-il seulement sur notre
  * marché ? »
  *
  * ---------------------------------------------------------------------------

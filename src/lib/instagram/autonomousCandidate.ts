@@ -71,7 +71,7 @@ export interface AutonomousCandidate {
    */
   readonly serviceFit: CoreServiceFitAssessment | null;
   /**
-   * HERMES-CLEANING-ONLY-ICP-R1 — la lecture complète de l'offre, publiée à
+   * HERMES-SERVICE-SCOPE-TARGETING-R1 — la lecture complète de l'offre, publiée à
    * côté du verdict pour la même raison que `serviceFit` : « MIXED » seul
    * n'apprend rien à qui conteste le refus, alors que les familles trouvées, le
    * champ où elles ont été lues et le vocabulaire ambigu permettent de discuter

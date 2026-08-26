@@ -878,7 +878,7 @@ describe('un rédacteur corrigé peut réécrire — sans effacer ce qui existai
   it('la parole d’un humain l’emporte sur une génération plus récente', async () => {
     const turn = await realCanaryThread();
     const relu = await persistDraft(sql, turn.context, turn.analysis, {
-      body: 'Le texte que un opérateur a validé.',
+      body: 'Le texte qu’un opérateur a validé.',
       bodySha256: 'f'.repeat(64),
       rationale: 'ancien rédacteur',
       guardrailFlags: [],

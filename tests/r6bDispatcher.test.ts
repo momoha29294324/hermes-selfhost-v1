@@ -129,8 +129,8 @@ async function lockFor(transport: Transport, text = TEXT): Promise<DispatchManif
     await addEvidence(prospectId, 'instagram_handle', 'acme_atelier_');
     channels = ['instagram'];
   } else if (transport === 'facebook_dm') {
-    prospectId = await makeProspect({ facebookUrl: 'https://www.facebook.com/prestationautolyon' });
-    await addEvidence(prospectId, 'facebook_url', 'https://www.facebook.com/prestationautolyon');
+    prospectId = await makeProspect({ facebookUrl: 'https://www.facebook.com/demo_account_31' });
+    await addEvidence(prospectId, 'facebook_url', 'https://www.facebook.com/demo_account_31');
     channels = ['facebook'];
   } else if (transport === 'whatsapp') {
     prospectId = await makeProspect({ phone: '+33616790858', websiteUrl: 'https://acme.fr' });
@@ -564,7 +564,7 @@ describe('§6/§9 — DRY_RUN : enveloppe exacte, aucun réseau, aucun envoi', (
     const expected: Record<string, string> = {
       email: 'contact@acme.fr',
       instagram_dm: 'acme_atelier_',
-      facebook_dm: 'https://www.facebook.com/prestationautolyon',
+      facebook_dm: 'https://www.facebook.com/demo_account_31',
       whatsapp: '+33616790858',
     };
     for (const transport of ['email', 'instagram_dm', 'facebook_dm', 'whatsapp'] as const) {
@@ -650,7 +650,7 @@ describe('§8 — adapters de transport : forme et DRY_RUN, rien de plus', () =>
     const valid: Record<string, string> = {
       email: 'contact@acme.fr',
       instagram_dm: 'demo_prospect_a',
-      facebook_dm: 'https://www.facebook.com/prestationautolyon',
+      facebook_dm: 'https://www.facebook.com/demo_account_31',
       web_form: 'https://acme.fr/contact',
       sms: '+33616790858',
       whatsapp: '+33616790858',
@@ -671,7 +671,7 @@ describe('§8 — adapters de transport : forme et DRY_RUN, rien de plus', () =>
     const invalid: Record<string, string> = {
       email: 'contact chez acme',
       instagram_dm: '@demo_prospect_a',
-      facebook_dm: 'https://instagram.com/prestationautolyon',
+      facebook_dm: 'https://instagram.com/demo_account_31',
       web_form: 'acme.fr/contact',
       sms: '0616790858',
       whatsapp: '33616790858',

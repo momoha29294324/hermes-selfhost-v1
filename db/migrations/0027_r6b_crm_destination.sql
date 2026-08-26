@@ -4,7 +4,7 @@
 -- 0026 a posé la FRONTIÈRE : une charge utile exacte, figée, auditable, et une
 -- ligne `r6b_crm_projections` qui dit pourquoi elle n'est pas partie. Ce qui
 -- manquait était la destination — et 0026 disait explicitement pourquoi elle
--- manquait : « le seul CRM que la machine de un opérateur connaît appartient à
+-- manquait : « le seul CRM que la machine d'un opérateur connaît appartient à
 -- un projet isole, et la documentation d’installation interdit d'y toucher ».
 --
 -- Cette migration ne résout pas ce problème en nommant un sous-compte. Elle le

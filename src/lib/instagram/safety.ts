@@ -228,7 +228,7 @@ export async function loadSafetySnapshot(sql: Sql, config: InstagramRailConfig):
   //
   // Ce n'était pas le cas au départ — un `count(*)` sur toute la fenêtre — et
   // le premier dry-run authentifié l'a montré : trois sessions non saines
-  // constatées AVANT que un opérateur se connecte bloquaient encore le rail alors
+  // constatées AVANT qu'un opérateur se connecte bloquaient encore le rail alors
   // qu'une session `SESSION_READY` avait été observée depuis. Un plafond
   // d'échecs qui ignore le succès qui les a suivis ne mesure pas un rail en
   // panne, il mesure un passé révolu — et il obligerait à attendre la fin de la

@@ -269,7 +269,7 @@ export type InstagramSkipReason =
    */
   | 'audience_borderline'
   /**
-   * HERMES-CLEANING-ONLY-ICP-R1 §3 — ce commerce commercialise une prestation
+   * HERMES-SERVICE-SCOPE-TARGETING-R1 §3 — ce commerce commercialise une prestation
    * NON-PRESTATION STANDARD (REVENTE, boutique en ligne, revente, vente de produits, mécanique, formation…).
    *
    * Nommé à part d'`icp_not_target`, et la distinction porte : `icp_not_target`

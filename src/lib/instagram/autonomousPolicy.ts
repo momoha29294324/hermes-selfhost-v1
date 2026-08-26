@@ -67,10 +67,10 @@ import type { InstagramSkipReason } from '@/lib/instagram/types';
  * que ce qui a réellement décidé. Toute modification des portes ci-dessous
  * demande de l'incrémenter — c'est ce qui rend une décision passée rejouable.
  */
-export const AUTONOMOUS_POLICY_VERSION = 'hermes-targeting-cleaning-only-r1';
+export const AUTONOMOUS_POLICY_VERSION = 'hermes-targeting-service-scope-r1';
 
 /**
- * HERMES-CLEANING-ONLY-ICP-R1 §5 — pourquoi la version change, et ce que cela
+ * HERMES-SERVICE-SCOPE-TARGETING-R1 §5 — pourquoi la version change, et ce que cela
  * referme.
  *
  * TROIS portes ont été ajoutées, et une quatrième a durci sa règle :
@@ -108,7 +108,7 @@ export const AUTONOMOUS_POLICY_SUPERSEDED = 'hermes-targeting-r1';
  * approbation d'hier couvrir un envoi soumis aux règles d'aujourd'hui.
  */
 export const AUTONOMOUS_POLICY_LINEAGE: readonly string[] = [
-  'hermes-targeting-cleaning-only-r1',
+  'hermes-targeting-service-scope-r1',
   'hermes-targeting-r1',
   'hermes-autonomous-r2',
 ];
@@ -204,7 +204,7 @@ export interface AutonomousFacts {
    */
   readonly coreServiceFit: CoreServiceFitVerdict;
   /**
-   * HERMES-CLEANING-ONLY-ICP-R1 §3-§6 — l'offre commerciale, telle que
+   * HERMES-SERVICE-SCOPE-TARGETING-R1 §3-§6 — l'offre commerciale, telle que
    * `assessServiceScope` l'a lue dans le cadre ET dans la liste de prestations.
    *
    * Porté À CÔTÉ de `coreServiceFit`, jamais à sa place : les deux répondent à
@@ -386,7 +386,7 @@ function firstRefusal(facts: AutonomousFacts): Verdict | null {
 
   // ---- 3 bis. Une AUTRE ligne représente déjà ce commerce -------------------
   //
-  // HERMES-CLEANING-ONLY-ICP-R1 §14-§15. Placée juste après le contact établi
+  // HERMES-SERVICE-SCOPE-TARGETING-R1 §14-§15. Placée juste après le contact établi
   // parce qu'elle répond à la même famille de question — « connaît-on déjà ce
   // commerce ? » — et AVANT tout jugement commercial : évaluer deux fois la
   // même entreprise pour n'en garder qu'une à la fin ferait dépendre le
@@ -439,7 +439,7 @@ function firstRefusal(facts: AutonomousFacts): Verdict | null {
 
   // ---- 4 bis. L'OFFRE : du prestation standard, et rien d'autre -----------------------
   //
-  // HERMES-CLEANING-ONLY-ICP-R1 §3-§7. Placée juste après l'ICP parce qu'elle
+  // HERMES-SERVICE-SCOPE-TARGETING-R1 §3-§7. Placée juste après l'ICP parce qu'elle
   // répond à la même famille de question — « est-ce notre client ? » — et AVANT
   // l'audience parce qu'un atelier qui vend du REVENTE reste hors cible quel que
   // soit son nombre d'abonnés. L'ordre décide du motif qu'un prospect portera
