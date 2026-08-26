@@ -46,8 +46,29 @@ import { stripAccents } from '@/lib/identity/normalize';
  * décide de refuser un message pour l'un ou pour l'autre.
  */
 
-/** La cible, en mots. Le message idéal tient dedans (§16). */
-export const FIRST_TOUCH_TARGET_WORDS = Object.freeze({ min: 15, max: 35 });
+/**
+ * La cible, en mots. Le message idéal tient dedans (§16).
+ *
+ * ---------------------------------------------------------------------------
+ * Pourquoi 45 et non plus 35
+ * ---------------------------------------------------------------------------
+ * FIRST-TOUCH-NATURALNESS-TUNE-R1. Le gold set — cinq messages jugés SEND par
+ * l'opérateur, c'est-à-dire la seule VOIX qu'une instance ait validée — fait
+ * 43, 48, 49, 49 et 51 mots. La cible à 35 n'en couvrait aucun : le corpus
+ * validé et la production n'avaient AUCUNE intersection, et le contrôle
+ * enseignait donc l'inverse de ce que le gold set enseigne.
+ *
+ * Ce que ces mots achètent est nommé, et c'est un seul beat : la RÉACTION
+ * personnelle entre l'observation et la question (« je connaissais mal le
+ * principe », « je vois ça moins souvent »). Elle tient en cinq à huit mots, et
+ * c'est elle qui sépare un message écrit par quelqu'un d'un message écrit par
+ * un système. À 35 mots, observation + question saturaient déjà le budget, donc
+ * la seule chose que le modèle pouvait couper était précisément celle-là.
+ *
+ * 45 n'est pas une permission d'écrire long : `FIRST_TOUCH_MAX_WORDS` n'a pas
+ * bougé, et le message reste un DM lu sur un téléphone.
+ */
+export const FIRST_TOUCH_TARGET_WORDS = Object.freeze({ min: 15, max: 45 });
 
 /**
  * Le plafond réellement opposable, plus haut que la cible.
@@ -68,8 +89,25 @@ export const FIRST_TOUCH_MIN_WORDS = 8;
  *
  * Redondant avec les mots, et volontairement : un message de 40 mots très longs
  * reste un pavé à l'écran d'un téléphone, et c'est l'écran qui compte en DM.
+ *
+ * ---------------------------------------------------------------------------
+ * Pourquoi 300, et pourquoi ce n'est pas « un peu plus de marge »
+ * ---------------------------------------------------------------------------
+ * FIRST-TOUCH-NATURALNESS-TUNE-R1. À 260, ce plafond n'était pas redondant :
+ * il DÉCIDAIT, en silence, et il décidait autre chose que ce que le plafond de
+ * mots annonçait. Un DM français mesuré sur le gold set coûte entre 6,0 et 6,5
+ * caractères par mot espaces comprises (278/43, 290/48, 297/49, 311/49,
+ * 313/51). 260 caractères valaient donc ~42 mots — c'est-à-dire que le plafond
+ * de mots à 48 était inatteignable, et que la « tolérance légèrement
+ * supérieure » de §16 n'existait que sur le papier.
+ *
+ * 300 est le chiffre qui rend les deux plafonds D'ACCORD plutôt que
+ * concurrents : 48 mots × ~6,2 ≈ 298. Ce qui borne un premier message reste
+ * donc le nombre de mots, qui est ce qu'on a voulu borner ; le compte de
+ * caractères redevient ce qu'il prétendait être, un garde-fou contre les mots
+ * anormalement longs.
  */
-export const FIRST_TOUCH_MAX_CHARS = 260;
+export const FIRST_TOUCH_MAX_CHARS = 300;
 
 /** Salutation + observation + question. Au-delà, c'est un paragraphe. */
 export const FIRST_TOUCH_MAX_SENTENCES = 3;
@@ -277,6 +315,22 @@ const CORPORATE_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
  * est découpée par `observationClaims`, qui a besoin de connaître TOUTES les
  * tournures d'une phrase et pas seulement celle qui l'ouvre — voir plus bas.
  */
+/**
+ * La tournure à la DEUXIÈME personne, isolée des autres.
+ *
+ * Elle est la seule AMBIGUË de la liste. « J'ai vu », « j'ai regardé », « je
+ * suis tombé sur » sont des assertions à la première personne : elles affirment
+ * toujours, elles ne demandent jamais. « Vous faites » affirme dans « j'ai vu
+ * que vous faites du portrait en lumière naturelle » et DEMANDE dans « vous faites comment
+ * pour avoir de nouveaux clients ? ».
+ *
+ * Elle reste dans `OBSERVATION_TRIGGERS` — donc elle borne et elle est retirée
+ * des clauses exactement comme avant. Ce qui la distingue est ailleurs : voir
+ * `addressesAQuestion`, qui l'empêche seule d'OUVRIR une affirmation.
+ */
+const SECOND_PERSON_TRIGGER =
+  /\bvous\s+(?:proposez|faites|faisiez|mettez\s+en\s+avant|avez\s+mis\s+en\s+place)\b/gi;
+
 const OBSERVATION_TRIGGERS: readonly RegExp[] = [
   /\bj'ai\s+vu\s+que\b/gi,
   /\bj'ai\s+vu\s+(?=votre|vos|le\b|la\b|les\b)/gi,
@@ -284,8 +338,50 @@ const OBSERVATION_TRIGGERS: readonly RegExp[] = [
   // qui existe en français, et un motif qui l'oublie ne matche jamais rien.
   new RegExp(`\\bj'ai\\s+(?:regard[ée]|remarqu[ée]|aper[çc]u|not[ée])${END}`, 'gi'),
   /\bje\s+(?:suis\s+tomb[ée]\s+sur|regardais)\b/gi,
-  /\bvous\s+(?:proposez|faites|faisiez|mettez\s+en\s+avant|avez\s+mis\s+en\s+place)\b/gi,
+  SECOND_PERSON_TRIGGER,
 ];
+
+/**
+ * Le mot interrogatif lui-même.
+ *
+ * `où` y est, `ou` n'y est PAS, et la différence est un accent. Elle tient
+ * parce que `normalizeForMatching` ne touche pas aux accents (c'est écrit dans
+ * son en-tête, et c'est délibéré). Les écraser ferait de « vous faites du
+ * reportage ou du cadrage » une question, donc perdrait une observation
+ * vraie — l'exact contraire de ce que ce correctif doit faire.
+ */
+const INTERROGATIVE_WORD = "(?:comment|combien|pourquoi|quand|où|quoi|qu'est-ce|quel|quelle|quels|quelles)";
+
+/** Le mot interrogatif COLLÉ devant la tournure : « comment vous faites … ». */
+const INTERROGATIVE_BEFORE = new RegExp(`(?:^|[^\\p{L}])${INTERROGATIVE_WORD}[\\s,]+$`, 'iu');
+
+/** Le mot interrogatif COLLÉ derrière : « vous faites comment … ». */
+const INTERROGATIVE_AFTER = new RegExp(`^[\\s,]*${INTERROGATIVE_WORD}(?![\\p{L}])`, 'iu');
+
+/**
+ * Cette occurrence de « vous <verbe> » DEMANDE-t-elle, au lieu d'affirmer ?
+ *
+ * ---------------------------------------------------------------------------
+ * Ce qu'elle regarde, et ce qu'elle refuse de regarder
+ * ---------------------------------------------------------------------------
+ * Uniquement le mot interrogatif ADJACENT, des deux côtés. Les deux seules
+ * formes que le corpus produit réellement sont « vous faites **comment** pour
+ * … ? » et « **comment** vous faites pour … ? » — mesurées sur les 420 messages
+ * déjà écrits.
+ *
+ * Elle ne regarde PAS si la phrase se termine par « ? », et c'est le point
+ * important. « J'ai vu que vous faites du portrait en lumière naturelle, ça tourne bien ? »
+ * est une phrase interrogative qui contient une observation parfaitement
+ * factuelle, et qui doit rester ancrée. Prendre le « ? » de la phrase pour
+ * preuve aurait fait disparaître une garde réelle sous couvert d'en réparer une
+ * fausse.
+ *
+ * Pure, et strictement PLUS ÉTROITE que ce qui existait : elle ne peut que
+ * retirer des affirmations, jamais en ajouter.
+ */
+function addressesAQuestion(sentence: string, start: number, end: number): boolean {
+  return INTERROGATIVE_BEFORE.test(sentence.slice(0, start)) || INTERROGATIVE_AFTER.test(sentence.slice(end));
+}
 
 /**
  * Les mots trop communs pour prouver qu'une observation vient d'un fait.
@@ -364,11 +460,21 @@ export function observationClaims(
     let firstIndex = Number.POSITIVE_INFINITY;
     for (const trigger of OBSERVATION_TRIGGERS) {
       const scan = new RegExp(trigger.source, trigger.flags);
-      const match = scan.exec(sentence);
-      if (match === null) continue;
-      if (match.index < firstIndex) {
-        firstIndex = match.index;
-        firstEnd = match.index + match[0].length;
+      // Toutes les occurrences, et non la première : la tournure à la deuxième
+      // personne peut DEMANDER une fois puis AFFIRMER ensuite dans la même
+      // phrase, et s'arrêter à la première ferait perdre la seconde.
+      for (const match of sentence.matchAll(scan)) {
+        const start = match.index;
+        const end = start + match[0].length;
+        // Une QUESTION n'ouvre pas une affirmation. La garde ne vaut que pour
+        // la tournure ambiguë : les autres sont à la première personne et
+        // affirment toujours.
+        if (trigger === SECOND_PERSON_TRIGGER && addressesAQuestion(sentence, start, end)) continue;
+        if (start < firstIndex) {
+          firstIndex = start;
+          firstEnd = end;
+        }
+        break;
       }
     }
     if (firstEnd < 0) continue;

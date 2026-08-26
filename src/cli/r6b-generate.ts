@@ -56,6 +56,7 @@ import { ModelRouter } from '@/lib/models/router';
 import { ProspectRepository } from '@/lib/repo/prospects';
 import { buildAngle, loadCaseStudy } from '@/lib/pipeline/angle';
 import { generateMessages } from '@/lib/pipeline/message';
+import { loadFirstTouchPersonalization } from '@/lib/pipeline/firstTouchPersonalizationStore';
 import { contactChannels } from '@/lib/pipeline/reach';
 import {
   BatchRequestError,
@@ -191,7 +192,33 @@ async function main(): Promise<void> {
       const angle = await buildAngle(router, prospect, research, caseStudy);
       if (!angle) throw new Error(`angle indisponible pour ${prospect.display_name} — échec technique`);
 
-      let generated = await generateMessages(router, campaign, operatorProfile, prospect, research, angle, caseStudy);
+      // FIRST-TOUCH-NATURALNESS-TUNE-R1 — les preuves déjà collectées, lues.
+      //
+      // Lecture SEULE, et fail-closed par construction : sans ligne assez
+      // solide, `buildFirstTouchPersonalization` rend `GENERIC` et le prompt
+      // repart sur l'ouverture honnête d'avant. Aucune donnée n'est créée ici,
+      // aucune n'est inventée : ce sont les lignes `prospect_evidence` que la
+      // découverte a écrites, et rien d'autre.
+      //
+      // `angleHook` est passé pour que l'accroche commerciale serve de REPLI
+      // quand aucune preuve ne survit — c'est-à-dire exactement ce que le
+      // prompt recevait jusqu'ici.
+      const personalization = await loadFirstTouchPersonalization(sql, {
+        prospectId: prospect.id,
+        displayName: prospect.display_name,
+        city: prospect.city,
+        angleHook: angle.personalization,
+      });
+      logger.info('r6b.first_touch_personalization', {
+        prospect: prospect.display_name,
+        opening: personalization.opening,
+        angle: personalization.hook?.angle ?? null,
+        evidence: personalization.hook?.evidenceIds.length ?? 0,
+      });
+
+      let generated = await generateMessages(
+        router, campaign, operatorProfile, prospect, research, angle, caseStudy, personalization,
+      );
       if (!generated) throw new Error(`message indisponible pour ${prospect.display_name} — échec technique`);
       let chosen = generated.messages.find((m) => m.variant === generated!.chosenVariant);
       if (!chosen) throw new Error(`variante choisie introuvable pour ${prospect.display_name}`);
@@ -199,7 +226,9 @@ async function main(): Promise<void> {
       // §12 : retry uniquement sur garde-fou bloquant, jamais pour "un plus beau texte".
       if (chosen.blocked) {
         logger.warn('r6b.guardrail_retry', { prospect: prospect.display_name, flags: chosen.guardrailFlags });
-        generated = await generateMessages(router, campaign, operatorProfile, prospect, research, angle, caseStudy);
+        generated = await generateMessages(
+          router, campaign, operatorProfile, prospect, research, angle, caseStudy, personalization,
+        );
         if (!generated) throw new Error(`message indisponible pour ${prospect.display_name} après retry`);
         chosen = generated.messages.find((m) => m.variant === generated!.chosenVariant);
         if (!chosen || chosen.blocked) {

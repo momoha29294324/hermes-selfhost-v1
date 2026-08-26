@@ -360,9 +360,14 @@ export interface PersonalizationInput {
   /**
    * L'accroche de l'angle commercial, si une existe et a survécu au grounding.
    *
-   * Quand elle existe, elle GAGNE : elle a vu la recherche entière, là où ce
-   * module ne voit que des champs. Ce paramètre est là pour que l'appelant
-   * n'ait pas à écrire cette règle deux fois.
+   * Elle est un REPLI, jamais un vainqueur : une accroche lue des preuves passe
+   * devant elle, et elle ne sert que si aucune n'a survécu. La raison est
+   * détaillée là où la règle est écrite, dans `buildFirstTouchPersonalization`.
+   *
+   * (Ce commentaire disait l'inverse — « quand elle existe, elle GAGNE » — et
+   * contredisait le code depuis le premier jour. Personne ne l'avait vu parce
+   * que rien n'appelait ce module ; FIRST-TOUCH-NATURALNESS-TUNE-R1 l'a
+   * branché, et la contradiction est devenue lisible.)
    */
   readonly angleHook?: string | null;
 }
@@ -570,11 +575,21 @@ export function renderPersonalizationBlock(result: FirstTouchPersonalization): s
       '- aucun. Ouvre par une question simple et honnête, sans prétendre avoir regardé leur travail.',
     );
   } else {
-    lines.push(`- ${result.hook.observation}  [${result.hook.provider}]`);
+    // FIRST-TOUCH-NATURALNESS-TUNE-R1 — les identifiants de preuve sont ÉCRITS.
+    //
+    // Sans eux, le modèle n'avait rien à citer dans `used_evidence_ids`, et
+    // `outreach_messages.used_facts` sortait vide : le message restait vrai,
+    // mais le dépôt ne savait plus DIRE sur quelle ligne il reposait. C'est la
+    // provenance de l'interdit n°2, et elle ne se reconstitue pas après coup.
+    const cite = result.hook.evidenceIds.length > 0 ? `  [${result.hook.evidenceIds.join(', ')}]` : '';
+    lines.push(`- ${result.hook.observation}${cite}  [${result.hook.provider}]`);
     lines.push(
       '- reprends-le en UNE incise courte et naturelle, puis enchaîne sur ta question. Ne le',
       '  commente pas, ne le complimente pas, ne l’analyse pas, et n’en ajoute aucun autre.',
     );
+    if (result.hook.evidenceIds.length > 0) {
+      lines.push('- si tu le reprends, cite ses identifiants entre crochets dans `used_evidence_ids`.');
+    }
   }
 
   return lines.join('\n');

@@ -106,6 +106,30 @@ export const MESSAGE_SCHEMA = {
  * Le prompt le dit ; `firstTouchStyle.ts` le vérifie. Les deux, parce que le
  * prompt disait DÉJÀ « pas d'audit, pas de vocabulaire d'acquisition » quand
  * ces messages sont partis.
+ *
+ * ---------------------------------------------------------------------------
+ * FIRST-TOUCH-NATURALNESS-TUNE-R1 — ce que le tour 1 CHERCHE
+ * ---------------------------------------------------------------------------
+ * Ce prompt demandait deux choses à la fois : ouvrir une conversation, et
+ * qualifier tout de suite le canal d'acquisition. La seconde tuait la
+ * première. Un tour 1 qui demande « comment trouvez-vous vos clients
+ * aujourd'hui ? » porte zéro observation, personne derrière, et une question à
+ * laquelle on ne répond que si on a déjà décidé d'acheter. Le modèle ne
+ * dérivait pas : il faisait exactement ce qu'on lui demandait.
+ *
+ * Le tour 1 vise désormais UNE chose — une réponse humaine — et la
+ * qualification commerciale commence au tour 2, où le runtime conversationnel
+ * (`src/lib/conversation/`) sait déjà la conduire. Ce n'est pas une garde de
+ * moins : rien n'est INTERDIT ici qui ne l'était, et la question d'acquisition
+ * reste licite pour `checkFirstTouch`. C'est une STRATÉGIE qui change, donc
+ * elle change là où les stratégies vivent — dans le prompt.
+ *
+ * La structure enseignée est celle qu'un message écrit par une personne porte
+ * réellement, et que personne n'avait écrite : observation → réaction
+ * personnelle à la première personne → question légère. Le beat du milieu
+ * parle de l'EXPÉDITEUR, donc n'affirme rien de neuf sur le prospect et n'a
+ * rien à sourcer — c'est précisément pour cela qu'il est sûr, et c'est lui
+ * qu'un budget de mots trop serré fait couper en premier.
  */
 
 /**
@@ -126,7 +150,7 @@ function renderVoiceGuidance(examples: readonly { body: string; note: string }[]
   const rendered = examples
     .map((example, index) => `Exemple ${String(index + 1)} :\n${example.body}${example.note.length > 0 ? `\n(${example.note})` : ''}`)
     .join('\n\n');
-  return `${base}\n\nReprends le TON des exemples ci-dessous — jamais leurs phrases, et jamais leur longueur :\n\n${rendered}`;
+  return `${base}\n\nReprends le TON et les trois temps des exemples ci-dessous — jamais leurs phrases, jamais leur longueur, et jamais leur question : la tienne doit naître de ce que TU as observé sur CE prospect.\n\n${rendered}`;
 }
 
 function buildSystem(
@@ -153,17 +177,33 @@ function buildSystem(
 Tu écris à : ${identity.audienceDescription}
 Canal : ${channelLabel}. Langue : français.
 
+TON SEUL OBJECTIF ICI
+Obtenir une réponse humaine. Rien d'autre.
+Ce message ne vend rien, ne qualifie rien et ne cherche à savoir NI comment ils trouvent leurs clients, NI s'ils en veulent plus. Cette conversation-là vient APRÈS, quand ils auront répondu. Un message qui essaie de qualifier tout de suite se reconnaît immédiatement, et c'est ce qui le fait ignorer.
+Écris comme quelqu'un qui vient de tomber sur leur compte et qui a une question, pas comme quelqu'un qui déroule une démarche.
+
 CE QUE TU ÉCRIS EXACTEMENT
-Un premier message n'est PAS un mini-audit : c'est une ouverture de conversation. Son seul objectif est qu'on ait envie de répondre.
-- une à deux phrases, ${FIRST_TOUCH_TARGET_WORDS.min} à ${FIRST_TOUCH_TARGET_WORDS.max} mots, ${maxChars} caractères au maximum ;
+Trois temps, dans cet ordre, sans que rien ne le signale au lecteur :
+1. UNE observation vraie, courte, tirée des faits vérifiés fournis — et rien qu'eux ;
+2. UNE réaction personnelle brève, à la première personne : ce que ça t'inspire, À TOI. Elle parle de toi, jamais d'eux — elle n'affirme donc rien de nouveau sur leur entreprise et n'a rien à prouver. Dans l'esprit de « je connaissais mal le principe », « je vois ça moins souvent », « je trouve le concept plutôt pratique » — ce sont des EXEMPLES de nature, pas des formules à réutiliser : trouve la tienne à chaque fois, et ne l'écris pas si tu n'as rien de sincère à dire.
+   Cette réaction porte sur CE QUE TU AS VU, et elle dit quelque chose : que tu connaissais mal, que tu en vois rarement, que tu trouves ça malin, pratique, inhabituel. Elle n'annonce JAMAIS la suite du message — « ça m'a fait penser à une question », « du coup je me demandais », « petite question en voyant que… », « ce qui m'amène à te demander » sont des transitions et non des réactions : elles prennent la place du seul temps humain du message et n'y mettent rien. Dès qu'il y a une observation, il y a une réaction ;
+3. UNE question simple, facile à répondre.
+
+Le deuxième temps est ce qui sépare un message écrit par quelqu'un d'un message écrit par un système. Ne le sacrifie pas pour gagner des mots.
+
+Ta question peut porter sur : leur zone d'intervention, une prestation, leur façon de travailler, une spécialisation, le type de demandes qu'ils reçoivent, ou n'importe quel élément réellement observable de leur activité. Elle doit se répondre en une phrase, sans effort et sans avoir à réfléchir. Si elle ressemble à la question d'un commercial qui prend des notes, elle est mauvaise.
+
+Contraintes de forme :
+- ${FIRST_TOUCH_TARGET_WORDS.min} à ${FIRST_TOUCH_TARGET_WORDS.max} mots, ${maxChars} caractères au maximum — ça se lit sur un téléphone ;
 - UNE seule question, jamais deux ;
-- au plus une observation courte, et seulement si un fait vérifié la porte ;
-- si rien n'a été observé, une question simple et honnête suffit — c'est mieux qu'une observation floue.
+- au plus une observation, et seulement si un fait vérifié la porte ;
+- si rien n'a été observé, saute les DEUX premiers temps : une question simple et honnête vaut mieux qu'une observation floue, et bien mieux qu'une observation inventée. C'est le seul cas où le message tient en deux temps.
 
 LE TON À TENIR
 ${renderVoiceGuidance(identity.voiceExamples)}
 - un seul détail concret en ouverture, s'il y en a un — pas un audit, pas une liste ;
-- une question posée simplement ;
+- une réaction personnelle juste après, courte, qui ne complimente pas et n'analyse pas ;
+- une question posée simplement, à laquelle on répond sans y penser ;
 - aucune liste à puces, aucun bloc de texte, aucun jargon d'agence ("synergie", "scaler", "disruptif", "levier d'acquisition").
 
 Vouvoie ou tutoie, mais pas les deux dans le même message. Aucune abréviation de SMS, aucun argot forcé, au plus un emoji.
@@ -265,6 +305,37 @@ ${research.unknowns.map((item) => `- ${item}`).join('\n') || '- aucune'}
   };
 }
 
+/**
+ * Les faits ANCRÉS que la personnalisation apporte, et rien d'autre.
+ *
+ * Pure, et fail-closed dans le seul sens qui compte : ce qui ne porte pas
+ * d'identifiant de preuve n'entre pas. `businessContext` entre parce qu'il est
+ * bâti exclusivement sur des lignes `prospect_evidence` que
+ * `buildFirstTouchPersonalization` a déjà filtrées (méthode directe, confiance
+ * ≥ 0,7) ; l'accroche de repli venue de `prospect_angles` n'entre pas, parce
+ * qu'elle ne cite aucune ligne.
+ */
+/** Les identifiants de preuve que le bloc de personnalisation a montrés. */
+function personalizationEvidenceIds(
+  personalization: FirstTouchPersonalization | null | undefined,
+): string[] {
+  if (personalization === null || personalization === undefined) return [];
+  return [...(personalization.hook?.evidenceIds ?? [])];
+}
+
+function groundedFactsFromPersonalization(
+  personalization: FirstTouchPersonalization | null | undefined,
+): string[] {
+  if (personalization === null || personalization === undefined) return [];
+  const facts: string[] = [...personalization.businessContext];
+  for (const hook of [personalization.hook, ...personalization.alsoAvailable]) {
+    if (hook === null) continue;
+    if (hook.evidenceIds.length === 0) continue;
+    facts.push(hook.observation);
+  }
+  return facts;
+}
+
 export function parseMessageAnswer(value: unknown): RawMessageAnswer {
   const parsed = value as Record<string, unknown>;
   const a = parsed['variant_a'] as { body?: unknown } | undefined;
@@ -284,9 +355,38 @@ export function checkGeneratedMessages(
   angle: AngleResult,
   caseStudy: CaseStudy | null,
   modelRunId: string | null,
+  /**
+   * FIRST-TOUCH-NATURALNESS-TUNE-R1 — les preuves que le PROMPT a réellement
+   * montrées, rendues visibles au contrôle qui juge le texte.
+   *
+   * Sans ce paramètre, brancher la personnalisation serait une machine à
+   * refuser : le prompt montrerait une observation lue dans `prospect_evidence`
+   * et `checkFirstTouch` la jugerait contre `prospect_research`, qui ne la
+   * porte pas. Le modèle écrirait donc une chose VRAIE, sourcée, et se ferait
+   * bloquer pour l'avoir écrite.
+   *
+   * Ce n'est pas un desserrage : la règle — « une observation doit être portée
+   * par un fait vérifié » — n'a pas bougé d'un mot. Ce sont les FAITS qui
+   * arrivent, et seulement ceux qui portent au moins une ligne
+   * `prospect_evidence` (`evidenceIds` non vide). Une accroche venue de
+   * `prospect_angles`, elle, n'apporte aucun fait : elle est un raisonnement,
+   * pas une observation, et elle est écartée ici comme elle l'a toujours été.
+   */
+  personalization?: FirstTouchPersonalization | null,
 ): MessageResult {
-  const allowedIds = new Set(research.observations.flatMap((observation) => observation.evidenceIds));
-  const groundedTexts = research.observations.map((observation) => observation.text);
+  // Les identifiants citables : ceux de la recherche, ET ceux des lignes
+  // `prospect_evidence` que le bloc de personnalisation a réellement montrées.
+  // Les seconds sont des lignes de preuve au même titre que les premiers ; ne
+  // pas les admettre ferait filtrer comme « non autorisée » une citation
+  // parfaitement exacte, et viderait `used_facts` de sa provenance.
+  const allowedIds = new Set([
+    ...research.observations.flatMap((observation) => observation.evidenceIds),
+    ...personalizationEvidenceIds(personalization),
+  ]);
+  const groundedTexts = [
+    ...research.observations.map((observation) => observation.text),
+    ...groundedFactsFromPersonalization(personalization),
+  ];
   const allowedNumbers = caseStudy && angle.useCaseStudy ? extractApprovedNumbers(caseStudy.claim) : [];
 
   const build = (
@@ -362,8 +462,22 @@ export async function generateMessages(
   research: ResearchResult,
   angle: AngleResult,
   caseStudy: CaseStudy | null,
+  /**
+   * FIRST-TOUCH-NATURALNESS-TUNE-R1 — la personnalisation LUE DES PREUVES,
+   * enfin branchée.
+   *
+   * `buildMessageRequest` savait la recevoir depuis
+   * HERMES-END-TO-END-CERTIFICATION-R1 ; personne ne la lui passait, et
+   * `loadFirstTouchPersonalization` n'avait AUCUN appelant de production. La
+   * capacité existait donc entièrement, et ne servait à rien.
+   *
+   * Optionnelle, et absente reproduit exactement le comportement d'avant :
+   * même prompt, mêmes faits ancrés, même verdict. C'est ce qui rend la
+   * comparaison vérifiable plutôt que promise.
+   */
+  personalization?: FirstTouchPersonalization | null,
 ): Promise<MessageResult | null> {
-  const request = buildMessageRequest(campaign, operator, prospect, research, angle, caseStudy);
+  const request = buildMessageRequest(campaign, operator, prospect, research, angle, caseStudy, personalization);
 
   const outcome = await router.run<RawMessageAnswer>(
     {
@@ -377,7 +491,15 @@ export async function generateMessages(
   );
 
   if (!outcome.ok || !outcome.data) return null;
-  const first = checkGeneratedMessages(outcome.data, campaign, research, angle, caseStudy, outcome.modelRunId);
+  const first = checkGeneratedMessages(
+    outcome.data,
+    campaign,
+    research,
+    angle,
+    caseStudy,
+    outcome.modelRunId,
+    personalization,
+  );
 
   const chosen = first.messages.find((message) => message.variant === first.chosenVariant);
   if (chosen === undefined || chosen.firstTouch.verdict !== 'OFF_TONE') return first;
@@ -409,7 +531,15 @@ export async function generateMessages(
   );
 
   if (!repaired.ok || !repaired.data) return first;
-  const second = checkGeneratedMessages(repaired.data, campaign, research, angle, caseStudy, repaired.modelRunId);
+  const second = checkGeneratedMessages(
+    repaired.data,
+    campaign,
+    research,
+    angle,
+    caseStudy,
+    repaired.modelRunId,
+    personalization,
+  );
   const secondChosen = second.messages.find((message) => message.variant === second.chosenVariant);
   // La reprise ne remplace le premier jet que si elle est MEILLEURE. Une
   // seconde version encore hors ton ne vaut pas mieux que la première, et

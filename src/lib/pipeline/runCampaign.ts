@@ -17,6 +17,7 @@ import { researchProspect } from '@/lib/pipeline/research';
 import { researchWithWorkers } from '@/lib/pipeline/workers';
 import { buildAngle, loadCaseStudy } from '@/lib/pipeline/angle';
 import { generateMessages } from '@/lib/pipeline/message';
+import { loadFirstTouchPersonalization } from '@/lib/pipeline/firstTouchPersonalizationStore';
 import { normalizeDomain, normalizeUrl } from '@/lib/identity/normalize';
 import type { CampaignConfig, NicheConfig, ScoringProfile } from '@/lib/config/schema';
 import { loadOperatorProfile } from '@/lib/config/load';
@@ -649,7 +650,20 @@ export async function runCampaign(options: RunOptions): Promise<{ campaignId: st
 
         if (!shouldRun('message', options.stopAfter)) continue;
 
-        const generated = await generateMessages(router, campaign, operatorProfile, fresh, research, angle, caseStudy);
+        // FIRST-TOUCH-NATURALNESS-TUNE-R1 — voir `r6b-generate.ts` : mêmes
+        // lignes, même lecture seule, même repli sur l'angle quand aucune
+        // preuve ne survit. Les deux chemins de production lisent désormais la
+        // même source, ce qui est la seule façon d'éviter qu'ils divergent.
+        const personalization = await loadFirstTouchPersonalization(sql, {
+          prospectId: fresh.id,
+          displayName: fresh.display_name,
+          city: fresh.city,
+          angleHook: angle.personalization,
+        });
+
+        const generated = await generateMessages(
+          router, campaign, operatorProfile, fresh, research, angle, caseStudy, personalization,
+        );
         if (!generated) {
           stats.notes.push(`message indisponible pour ${fresh.display_name}`);
           continue;
