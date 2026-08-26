@@ -65,6 +65,16 @@ import {
   type AcquisitionDisclosure,
 } from '@/lib/sales/acquisitionService';
 import { loadIcpConformity } from '@/lib/sales/conformity';
+import {
+  emptyBookingSnapshot,
+  loadBookingSnapshot,
+  type BookingSnapshot,
+} from '@/lib/booking/runtime';
+import { renderBookingBlock } from '@/lib/booking/prompt';
+import type { Interval } from '@/lib/booking/availability';
+import type { Appointment } from '@/lib/booking/store';
+import { checkBookingStatement, presentedDurationSentence } from '@/lib/booking/statement';
+import { loadBookingPolicy } from '@/lib/config/load';
 import { readCommercialDemands } from '@/lib/conversation/commercialPolicy';
 import { resolvePriceSubject } from '@/lib/sales/priceSubject';
 import {
@@ -225,6 +235,24 @@ export interface ConversationReply {
    * strictement identique à ce qu'elle était.
    */
   readonly bookingUrl: string | null;
+  /**
+   * HERMES-NATIVE-BOOKING-R1 — l'agenda RÉEL, lu une fois pour tout le tour.
+   *
+   * Distinct de `bookingUrl`, qui appartient au mécanisme EXTERNE de 0053 et
+   * reste `null` : celui-ci est l'agenda natif, et il n'a pas de lien. Les deux
+   * cohabitent sans se toucher — une destination confirmée transmettrait un
+   * lien, cet agenda-ci propose des créneaux, et aucune des deux lectures ne
+   * peut faire naître l'autre.
+   */
+  readonly booking: BookingSnapshot;
+  /**
+   * §19 — a-t-on le droit de PROPOSER un créneau à ce tour ?
+   *
+   * Recopié de `appointment.qualification`, jamais recalculé : la barre est
+   * celle que `assessAppointmentQualification` tenait déjà, et elle n'a pas
+   * bougé d'un cran dans ce round.
+   */
+  readonly mayProposeBooking: boolean;
   /** §27 — l'essai peut-il être mis sur la table à ce tour ? */
   readonly trialDisclosure: TrialDisclosure;
   /**
@@ -458,6 +486,53 @@ export async function understandConversation(
   const bookingDestination = booking.destination;
   const bookingIntent = booking.intent;
 
+  // HERMES-NATIVE-BOOKING-R1 — l'agenda NATIF, lu une fois pour tout le tour.
+  //
+  // Enveloppé pour la même raison exacte que la lecture ci-dessus, et avec la
+  // même conséquence : une base sans la migration 0061, une configuration
+  // absente ou une lecture qui lève rendent un agenda VIDE — donc aucun créneau
+  // proposable et aucune réservation possible. « Je ne sais pas » vaut « je ne
+  // propose rien », jamais « tout est libre ».
+  //
+  // La configuration est lue ici plutôt que passée en paramètre : `bookingPolicy`
+  // décrit l'opérateur, pas le tour, et la faire remonter par tous les appelants
+  // aurait obligé chaque test à la fabriquer pour ne rien en faire.
+  const nativeBooking = await (async () => {
+    try {
+      const policy = loadBookingPolicy();
+      return await loadBookingSnapshot(
+        sql,
+        {
+          prospectId: context.prospect.id,
+          channel: thread.channel,
+          triggerInboundMessageId: context.reply.id,
+          actor: 'hermes',
+        },
+        policy,
+        new Date(context.reply.receivedAt),
+      );
+    } catch {
+      try {
+        return emptyBookingSnapshot(loadBookingPolicy());
+      } catch {
+        // Même la configuration est illisible : on rend un agenda fermé, dont
+        // aucune fenêtre n'est ouverte. Rien ne peut en sortir.
+        return emptyBookingSnapshot({
+          calendarKey: 'unavailable',
+          timezone: 'UTC',
+          appointmentDurationMinutes: 30,
+          presentedDuration: { minMinutes: 30, maxMinutes: 30 },
+          slotGranularityMinutes: 30,
+          minNoticeMinutes: 0,
+          maxHorizonDays: 1,
+          maxProposedSlots: 1,
+          weeklyWindows: [],
+          blackouts: [],
+        });
+      }
+    }
+  })();
+
   // La fraîcheur se lit comme partout ailleurs (§24) : sur l'heure de
   // RÉCEPTION, jamais sur l'ordre de traitement. Un message plus récent arrivé
   // depuis rend ce tour dépassé, et un tour dépassé ne propose pas de créneau.
@@ -597,6 +672,9 @@ export async function understandConversation(
     icpConformity,
     appointment,
     bookingUrl: bookingDestination?.bookingUrl ?? null,
+    booking: nativeBooking,
+    // §19 — la même barre qu'avant ce round, recopiée et non rejugée.
+    mayProposeBooking: appointment.qualification === 'QUALIFIED_FOR_CALL',
     trialDisclosure: disclosure,
     contactPurpose: purpose,
     acquisition,
@@ -682,6 +760,17 @@ export interface ConversationReplyOptions {
    * vérification de §25.27 possible par comparaison de chaînes.
    */
   readonly learning?: LearningInjection | null;
+  /**
+   * HERMES-NATIVE-BOOKING-R1 — ce que le runtime a CALCULÉ pour ce tour.
+   *
+   * Absents partout sauf sur la réécriture qui suit une écriture d'agenda, et
+   * c'est le défaut du type : un appelant qui ne dit rien obtient exactement le
+   * prompt d'avant ce round, au caractère près, dès lors qu'aucun créneau n'est
+   * proposable — ce qui est le cas de la quasi-totalité des tours.
+   */
+  readonly bookingOffer?: readonly Interval[] | null;
+  readonly bookingJustBooked?: Appointment | null;
+  readonly bookingLostSlot?: Interval | null;
 }
 
 /**
@@ -703,6 +792,31 @@ export function composeConversationPrompt(
   options: ConversationReplyOptions = {},
 ): { readonly system: string; readonly prompt: string } {
   const channel = understanding.thread.channel;
+
+  // HERMES-NATIVE-BOOKING-R1 §6/§19 — l'agenda, quand la conversation l'appelle.
+  //
+  // `justBooked` et `lostSlot` viennent des options : ils n'existent QUE sur la
+  // seconde passe, quand le runtime a déjà écrit (ou échoué à écrire) et qu'on
+  // fait réécrire le texte. Sur la première passe, le bloc ne porte que des
+  // créneaux LIBRES, ce qui est tout ce que le modèle a besoin de savoir.
+  //
+  // Les créneaux ne sont montrés que si l'on a le droit de proposer OU si une
+  // proposition existe déjà (auquel cas la personne peut y répondre, et le
+  // modèle doit pouvoir la nommer). §19 tient : un tour ordinaire d'une
+  // conversation non qualifiée ne voit aucun créneau.
+  const bookingBlock = ((): readonly string[] => {
+    const showSlots =
+      understanding.mayProposeBooking || understanding.booking.latestProposal !== null;
+    const rendered = renderBookingBlock({
+      presentedDuration: presentedDurationSentence(understanding.booking.policy),
+      liveAppointment: understanding.booking.liveAppointment,
+      slots: options.bookingOffer ?? (showSlots ? understanding.booking.freeSlots : []),
+      timezone: understanding.booking.policy.timezone,
+      justBooked: options.bookingJustBooked ?? null,
+      lostSlot: options.bookingLostSlot ?? null,
+    });
+    return rendered === null ? [] : [rendered, ''];
+  })();
 
   const anchorLine =
     understanding.anchors.length > 0
@@ -780,8 +894,21 @@ export function composeConversationPrompt(
     renderObjectiveBlock({
       mechanism: understanding.appointment.booking,
       bookingUrl: understanding.bookingUrl,
+      // HERMES-NATIVE-BOOKING-R1 — l'agenda natif est ACTIF pour ce tour dès
+      // qu'il porte quelque chose de réel : des créneaux libres qu'on a le
+      // droit de proposer, une proposition en cours à laquelle répondre, ou un
+      // rendez-vous déjà pris. Sinon, le bloc est celui d'avant ce round au
+      // caractère près.
+      nativeBooking:
+        (understanding.mayProposeBooking && understanding.booking.freeSlots.length > 0) ||
+        understanding.booking.latestProposal !== null ||
+        understanding.booking.liveAppointment !== null,
     }),
     '',
+    // L'agenda vient APRÈS l'objectif — il en est le moyen — et AVANT le motif
+    // et l'offre : quand un créneau est sur la table, c'est de lui qu'on parle,
+    // pas du produit.
+    ...bookingBlock,
     ...purposeBlock,
     ...acquisitionBlock,
     ...offerBlock,
@@ -815,6 +942,33 @@ export function evaluateConversationDraft(
     readonly effort: string | null;
     readonly modelRunId: string | null;
   },
+  /**
+   * HERMES-NATIVE-BOOKING-R1 §11/§12 — ce que l'agenda autorise ce texte à
+   * affirmer.
+   *
+   * Absent par défaut, et l'absence est un REFUS : sans rendez-vous écrit et
+   * sans créneau calculé, `checkBookingStatement` refuse toute affirmation de
+   * réservation et n'autorise aucun créneau nommé. Un appelant qui oublie de le
+   * passer obtient donc plus strict, jamais plus permissif — c'est le sens que
+   * ce dépôt donne à « fail-closed ».
+   */
+  booking: {
+    readonly booked?: Appointment | null;
+    readonly offered?: readonly Interval[];
+    /**
+     * Ce tour vient-il d'ÉCRIRE ce rendez-vous ?
+     *
+     * Il manquait à ce type, et le manque était SILENCIEUX : l'appelant le
+     * passait déjà dans un objet nommé, où TypeScript ne signale pas les
+     * propriétés excédentaires. La règle « un rendez-vous réservé doit être
+     * nommé dans le texte » ne pouvait donc jamais se déclencher — un créneau
+     * pouvait être pris dans l'agenda sans que le message ne le dise.
+     *
+     * Trouvé par le test « la réécriture reçoit le créneau RÉSERVÉ quand le
+     * texte ne le nommait pas », qui échoue si on retire ce champ.
+     */
+    readonly writtenThisTurn?: boolean;
+  } = {},
 ): Attempt {
   const channel = understanding.thread.channel;
 
@@ -822,11 +976,25 @@ export function evaluateConversationDraft(
   // n'a pas le droit d'inventer ce qu'une réponse mono-tour n'avait pas le
   // droit d'inventer, et deux jeux de règles finiraient par diverger — c'est
   // toujours le plus indulgent qui gagnerait.
-  const guardrailFlags = checkReplyDraft(written.body, context, {
-    allowedBookingUrl: understanding.bookingUrl,
-    // Vide sur tous les tours sauf celui qui demande le budget publicitaire.
-    allowedAmounts: understanding.acquisition.quotableAmounts,
-  });
+  const guardrailFlags = [
+    ...checkReplyDraft(written.body, context, {
+      allowedBookingUrl: understanding.bookingUrl,
+      // Vide sur tous les tours sauf celui qui demande le budget publicitaire.
+      allowedAmounts: understanding.acquisition.quotableAmounts,
+    }),
+    // §11 — « Hermes ne dit jamais "c'est réservé" » quand ça ne l'est pas.
+    //
+    // Placé avec les autres garde-fous et non à côté : ils partagent le même
+    // vocabulaire (`GuardrailFlag`), la même conséquence (`blocked`), et donc
+    // la même porte de sortie. Un second barème ferait gagner le plus indulgent.
+    ...checkBookingStatement(written.body, {
+      booked: booking.booked ?? null,
+      offered: booking.offered ?? [],
+      timezone: understanding.booking.policy.timezone,
+      now: new Date(context.reply.receivedAt),
+      writtenThisTurn: booking.writtenThisTurn ?? false,
+    }),
+  ];
 
   const naturalness = checkNaturalness({
     body: written.body,

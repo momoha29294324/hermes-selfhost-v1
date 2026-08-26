@@ -103,7 +103,14 @@ export interface ConversationState {
  * généreuse.
  */
 const COVERED_PATTERNS: ReadonlyArray<readonly [CoveredTopic, RegExp]> = [
-  ['CALL_PROPOSED', /\b(s'appeler|un appel|un échange|un point rapide|se parler|quinze minutes|15 minutes|call|téléphone|telephone|de vive voix|dispo(nible)? pour (un|en))\b/i],
+  // La fourchette de durée (« 20 à 25 minutes ») est ajoutée pour la même
+  // raison que dans `naturalness.ts` : sans elle, une proposition d'échange
+  // faite par l'agenda natif ne serait pas comptée comme un sujet COUVERT, et
+  // le fil se croirait autorisé à la refaire au tour suivant.
+  [
+    'CALL_PROPOSED',
+    /\b(s'appeler|un appel|un échange|un point rapide|se parler|quinze minutes|15 minutes|\d{1,3}\s*(?:à|a|-|–)\s*\d{1,3}\s*min(?:utes?)?|call|téléphone|telephone|de vive voix|dispo(nible)? pour (un|en))\b/i,
+  ],
   ['PROOF_CITED', /\b(3\s?500|3500)\s?€|\bnous avons déjà généré\b/i],
   ['PRICE_ADDRESSED', /\b(prix|tarif|tarifs|budget|coût|cout|combien (ça|ca) coûte|dépend (du|de la|des))\b/i],
   ['HOW_IT_WORKS_EXPLAINED', /\b(concrètement|concretement|en pratique|on commence par|la façon dont|le principe|on met en place|étape|etape)\b/i],

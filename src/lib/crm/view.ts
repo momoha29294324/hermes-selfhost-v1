@@ -180,6 +180,7 @@ export const LANE_TONE: Readonly<Record<CrmLane, CrmTone>> = Object.freeze({
   CONTACTED: 'cyan',
   REPLIED: 'orange',
   INTERESTED: 'green',
+  APPOINTMENT: 'green',
   NOT_NOW: 'orange',
   NOT_INTERESTED: 'red',
   CLIENT: 'green',
@@ -359,6 +360,7 @@ export type CrmLane =
   | 'CONTACTED'
   | 'REPLIED'
   | 'INTERESTED'
+  | 'APPOINTMENT'
   | 'NOT_NOW'
   | 'NOT_INTERESTED'
   | 'CLIENT'
@@ -393,6 +395,11 @@ export const CRM_LANES: readonly CrmLaneDefinition[] = Object.freeze([
   { key: 'CONTACTED', label: 'Contactés', rule: 'au moins un envoi réel, aucune réponse reçue' },
   { key: 'REPLIED', label: 'Ont répondu', rule: 'une réponse corrélée, intention non tranchée' },
   { key: 'INTERESTED', label: 'Intéressés', rule: 'réponse classée INTERESTED ou MEETING_INTENT' },
+  {
+    key: 'APPOINTMENT',
+    label: 'Rendez-vous pris',
+    rule: 'un rendez-vous CONFIRMED existe dans l’agenda (hermes_appointments)',
+  },
   { key: 'NOT_NOW', label: 'Pas maintenant', rule: 'report explicite, relance possible plus tard' },
   { key: 'NOT_INTERESTED', label: 'Pas intéressés', rule: 'refus explicite, plus de relance à froid' },
   { key: 'CLIENT', label: 'Clients', rule: 'jalon « won » enregistré' },
@@ -427,6 +434,7 @@ export const CRM_PRIMARY_LANES: readonly CrmLane[] = Object.freeze([
   'CONTACTED',
   'REPLIED',
   'INTERESTED',
+  'APPOINTMENT',
 ]);
 
 export const CRM_TERMINAL_LANES: readonly CrmLane[] = Object.freeze([
@@ -485,6 +493,19 @@ export interface LaneInput {
   readonly isClient: boolean;
   /** Le prospect est-il présent dans `do_not_contact` par l'un de ses canaux ? */
   readonly doNotContact: boolean;
+  /**
+   * HERMES-NATIVE-BOOKING-R1 §17 — un rendez-vous CONFIRMED existe-t-il ?
+   *
+   * Un FAIT, pas un état de la machine — exactement comme `isClient`, qui
+   * s'appuie sur `prospect_milestones` et non sur une transition. La raison est
+   * la même : un rendez-vous pris n'est pas une réponse à un message, et la
+   * machine à états de R6B-D2 ne l'a jamais prétendu. Il se lit dans
+   * `hermes_appointments`, il ne se déduit de rien.
+   *
+   * Optionnel, et `false` par défaut : tous les appelants écrits avant ce round
+   * décrivent donc exactement la même donnée qu'avant, au champ près.
+   */
+  readonly hasConfirmedAppointment?: boolean;
 }
 
 /**
@@ -506,6 +527,14 @@ export function resolveLane(input: LaneInput): CrmLane | null {
   if (input.doNotContact) return 'PROTECTED';
   if (input.outreachState === 'SUPPRESSED' || input.outreachState === 'BOUNCED') return 'PROTECTED';
   if (input.isClient) return 'CLIENT';
+  // §17 — un rendez-vous PRIS l'emporte sur l'état de la machine.
+  //
+  // Il vient APRÈS `CLIENT` (une affaire gagnée est plus avancée qu'un
+  // rendez-vous) et AVANT la machine à états, parce qu'un prospect qui a un
+  // créneau dans l'agenda n'est plus simplement « intéressé » — et parce que la
+  // machine, elle, ne sait rien de l'agenda. Les deux sorties dures restent
+  // devant : un prospect protégé ou supprimé le reste, rendez-vous ou pas.
+  if (input.hasConfirmedAppointment === true) return 'APPOINTMENT';
   if (input.outreachState !== null) return STATE_LANE[input.outreachState];
 
   // Aucune ligne d'état : le pipeline se déduit des faits d'envoi.
@@ -604,6 +633,11 @@ const LANE_PHRASE: Readonly<Record<CrmLane, StatePhrase>> = Object.freeze({
   },
   REPLIED: { label: 'A répondu — intention non tranchée', short: 'A répondu', tone: 'positive' },
   INTERESTED: { label: 'Intéressé', short: 'Intéressé', tone: 'positive' },
+  APPOINTMENT: {
+    label: 'Rendez-vous pris — dans l’agenda',
+    short: 'Rendez-vous',
+    tone: 'positive',
+  },
   NOT_NOW: {
     label: 'Pas maintenant — relance possible plus tard',
     short: 'Pas maintenant',

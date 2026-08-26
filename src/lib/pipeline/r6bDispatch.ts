@@ -1049,9 +1049,26 @@ export async function loadCurrentManifestsByBatch(
   return map;
 }
 
+/**
+ * L'HISTOIRE d'une intention, dans l'ordre où elle s'est écrite.
+ *
+ * `locked_at` seul ne suffit pas à ordonner : deux manifestes verrouillés dans
+ * la même milliseconde — ce qui arrive dès qu'un remplacement suit son
+ * prédécesseur sans latence, donc systématiquement en test et parfois en
+ * production — se comparent égaux, et PostgreSQL rend alors les lignes dans
+ * l'ordre qui l'arrange. L'histoire d'un remplacement se lisait donc à
+ * l'envers une fois sur deux.
+ *
+ * `created_at` tranche, et `id` tranche l'égalité restante : le résultat est
+ * TOTALEMENT ordonné, donc stable d'une lecture à l'autre. Aucun de ces deux
+ * critères ne porte de sens métier — ils ne font que refuser à l'aléatoire le
+ * droit de décider.
+ */
 export async function loadManifestHistoryForItem(sql: Sql, itemId: string): Promise<DispatchManifest[]> {
   const rows = await sql.query<DbManifestRow>(
-    `select * from r6b_dispatch_manifests where batch_item_id = $1 order by locked_at asc`,
+    `select * from r6b_dispatch_manifests
+      where batch_item_id = $1
+      order by locked_at asc, created_at asc, id asc`,
     [itemId],
   );
   return rows.map(toManifest);

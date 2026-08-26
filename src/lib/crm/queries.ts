@@ -77,6 +77,13 @@ export interface CrmProspectRow {
   readonly lastReplyClassification: string | null;
   readonly recommendedNextAction: string | null;
   readonly isClient: boolean;
+  /**
+   * HERMES-NATIVE-BOOKING-R1 §17 — un rendez-vous CONFIRMED existe-t-il ?
+   *
+   * Lu comme `isClient` l'est : un `exists` sur un FAIT, jamais une déduction
+   * depuis l'état commercial.
+   */
+  readonly hasConfirmedAppointment: boolean;
   readonly doNotContact: boolean;
   readonly dedupeStatus: string;
   readonly campaignSlug: string;
@@ -172,6 +179,9 @@ const PROSPECT_SELECT = `
            order by a.created_at desc limit 1)                                     as "recommendedNextAction",
          exists (select 1 from prospect_milestones ms
                   where ms.prospect_id = p.id and ms.milestone = 'won')            as "isClient",
+         exists (select 1 from hermes_appointments ap
+                  where ap.prospect_id = p.id
+                    and ap.status = 'CONFIRMED')                                   as "hasConfirmedAppointment",
          exists (select 1 from do_not_contact d
                   where (d.match_kind = 'email'     and p.email is not null
                           and lower(d.value) = lower(p.email))
@@ -200,6 +210,7 @@ function decorate(row: CrmProspectRow): CrmProspect {
     sentCount: row.sentCount,
     hasLockedManifest: row.lockedTransport !== null,
     isClient: row.isClient,
+    hasConfirmedAppointment: row.hasConfirmedAppointment,
     doNotContact: row.doNotContact,
     lastReplyAt: row.lastReplyAt,
   });
@@ -413,6 +424,27 @@ export interface CrmProtection {
   readonly createdAt: string;
 }
 
+/**
+ * HERMES-NATIVE-BOOKING-R1 §16 — le rendez-vous, tel que la fiche l'affiche.
+ *
+ * Une projection de `hermes_appointments`, en LECTURE seule. Le CRM ne décide
+ * rien de l'agenda et n'écrit rien dedans : il montre ce que le rail
+ * conversationnel a inscrit. C'est la même discipline que pour les manifestes
+ * et les états — la fiche RELIT, elle ne rattrape pas.
+ */
+export interface CrmAppointment {
+  readonly id: string;
+  readonly startsAt: string;
+  readonly endsAt: string;
+  readonly timezone: string;
+  readonly status: 'CONFIRMED' | 'CANCELLED';
+  readonly source: string;
+  readonly confirmationState: string;
+  readonly cancelledAt: string | null;
+  readonly cancelledReason: string | null;
+  readonly createdAt: string;
+}
+
 export interface CrmWorkspace {
   readonly prospect: CrmProspect;
   readonly evidence: readonly CrmEvidence[];
@@ -424,6 +456,65 @@ export interface CrmWorkspace {
   readonly protections: readonly CrmProtection[];
   /** État de la copie CRM externe, quand une ligne existe. Optionnelle par construction. */
   readonly externalProjection: { readonly status: string; readonly provider: string } | null;
+  /**
+   * §16 — les rendez-vous de ce prospect, du plus récent au plus ancien.
+   *
+   * Au plus un est `CONFIRMED` (index partiel de 0061) ; les autres sont
+   * l'historique — reports et annulations compris, qui sont précisément ce
+   * qu'un opérateur veut voir quand il se demande pourquoi la date a bougé.
+   */
+  readonly appointments: readonly CrmAppointment[];
+}
+
+/**
+ * Les rendez-vous d'un prospect.
+ *
+ * Enveloppée, comme `loadExternalProjection` : une base qui n'a pas encore la
+ * migration 0061 doit afficher une fiche, pas une erreur 500. L'absence de
+ * table se lit « aucun rendez-vous », ce qui est la vérité de cette base-là.
+ */
+async function loadAppointments(db: Sql, prospectId: string): Promise<readonly CrmAppointment[]> {
+  try {
+    const rows = await db.query<{
+      id: string;
+      startsAt: string | Date;
+      endsAt: string | Date;
+      timezone: string;
+      status: 'CONFIRMED' | 'CANCELLED';
+      source: string;
+      confirmationState: string;
+      cancelledAt: string | Date | null;
+      cancelledReason: string | null;
+      createdAt: string | Date;
+    }>(
+      `select id, starts_at as "startsAt", ends_at as "endsAt", timezone, status, source,
+              confirmation_state as "confirmationState", cancelled_at as "cancelledAt",
+              cancelled_reason as "cancelledReason", created_at as "createdAt"
+         from hermes_appointments
+        where prospect_id = $1
+        order by starts_at desc, id desc
+        limit 20`,
+      [prospectId],
+    );
+    return Object.freeze(
+      rows.map((row) =>
+        Object.freeze({
+          id: row.id,
+          startsAt: new Date(row.startsAt).toISOString(),
+          endsAt: new Date(row.endsAt).toISOString(),
+          timezone: row.timezone,
+          status: row.status,
+          source: row.source,
+          confirmationState: row.confirmationState,
+          cancelledAt: row.cancelledAt === null ? null : new Date(row.cancelledAt).toISOString(),
+          cancelledReason: row.cancelledReason,
+          createdAt: new Date(row.createdAt).toISOString(),
+        }),
+      ),
+    );
+  } catch {
+    return Object.freeze([]);
+  }
 }
 
 export async function loadCrmWorkspace(prospectId: string, sql?: Sql): Promise<CrmWorkspace | null> {
@@ -434,17 +525,27 @@ export async function loadCrmWorkspace(prospectId: string, sql?: Sql): Promise<C
   if (row === undefined) return null;
   const prospect = decorate(row);
 
-  const [evidence, research, score, manifests, stateHistory, protections, projection, timeline] =
-    await Promise.all([
-      loadEvidence(db, prospectId),
-      loadResearch(db, prospectId),
-      loadScore(db, prospectId),
-      loadManifests(db, prospectId),
-      loadStateHistory(db, prospectId),
-      loadProtections(db, prospect),
-      loadExternalProjection(db, prospectId),
-      loadTimeline(db, prospectId),
-    ]);
+  const [
+    evidence,
+    research,
+    score,
+    manifests,
+    stateHistory,
+    protections,
+    projection,
+    timeline,
+    appointments,
+  ] = await Promise.all([
+    loadEvidence(db, prospectId),
+    loadResearch(db, prospectId),
+    loadScore(db, prospectId),
+    loadManifests(db, prospectId),
+    loadStateHistory(db, prospectId),
+    loadProtections(db, prospect),
+    loadExternalProjection(db, prospectId),
+    loadTimeline(db, prospectId),
+    loadAppointments(db, prospectId),
+  ]);
 
   return Object.freeze({
     prospect,
@@ -456,6 +557,7 @@ export async function loadCrmWorkspace(prospectId: string, sql?: Sql): Promise<C
     stateHistory,
     protections,
     externalProjection: projection,
+    appointments,
   });
 }
 

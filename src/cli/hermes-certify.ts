@@ -57,6 +57,9 @@ import {
 import { UNCOVERED_CURRENT_REQUESTS } from '@/lib/conversation/currentRequest';
 import { NATURALNESS_CLASS } from '@/lib/conversation/naturalness';
 import { PRICE_SUBJECT_VERSION } from '@/lib/sales/priceSubject';
+import { NATIVE_BOOKING_POLICY_VERSION } from '@/lib/booking/store';
+import { presentedDurationLabel } from '@/lib/booking/statement';
+import { loadBookingPolicy } from '@/lib/config/load';
 import type { Sql } from '@/lib/db/sql';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -119,6 +122,7 @@ function certifyVersions(): void {
   record('VERSIONS', 'politique commerciale', 'PASS', COMMERCIAL_POLICY_VERSION);
   record('VERSIONS', 'lecture d’un tour (prompt unifié)', 'PASS', REPLY_CLASSIFIER_PROMPT_VERSION);
   record('VERSIONS', 'sujet du prix', 'PASS', PRICE_SUBJECT_VERSION);
+  record('VERSIONS', 'rendez-vous natif', 'PASS', NATIVE_BOOKING_POLICY_VERSION);
   record(
     'VERSIONS',
     'consignes de rédaction',
@@ -228,6 +232,140 @@ function certifyNoEffect(): void {
     'cette commande ne sait pas envoyer',
     offenders.length === 0 ? 'PASS' : 'FAIL',
     offenders.length === 0 ? 'aucun provider, aucun rail, aucun arrêt global' : offenders.join(', '),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 3 bis. Le RENDEZ-VOUS NATIF — HERMES-NATIVE-BOOKING-R1
+// ---------------------------------------------------------------------------
+
+/**
+ * Les invariants du rendez-vous qui se lisent SANS base et SANS modèle.
+ *
+ * Trois, et ce sont les trois dont la disparition coûterait le plus cher :
+ *
+ *   * l'anti-double-réservation est portée par une CONTRAINTE, pas par du
+ *     code. Un refactor qui remplacerait l'exclusion par un `select` suivi
+ *     d'un `insert` passerait tous les tests unitaires et casserait la seule
+ *     propriété que §5 exige ;
+ *   * le moteur de disponibilité et le lecteur de dates sont PURS. Le jour où
+ *     l'un d'eux importe la base ou un provider, il devient possible qu'un
+ *     créneau se décide ailleurs que là où on le croit ;
+ *   * la durée d'un rendez-vous est CONFIGURÉE. §3 interdit qu'elle soit une
+ *     connaissance métier cachée, et un défaut de schéma la rendrait invisible.
+ */
+function certifyNativeBooking(): void {
+  const migration = join(ROOT, 'db', 'migrations', '0061_hermes_native_booking_r1.sql');
+  let sql = '';
+  try {
+    sql = readFileSync(migration, 'utf8');
+  } catch {
+    record('RENDEZ-VOUS', 'migration présente', 'FAIL', '0061 introuvable');
+    return;
+  }
+
+  const hasExclusion = /exclude\s+using\s+gist\s*\(\s*span\s+with\s+&&\s*\)/u.test(sql);
+  record(
+    'RENDEZ-VOUS',
+    'anti-double-réservation portée par la BASE',
+    hasExclusion ? 'PASS' : 'FAIL',
+    hasExclusion
+      ? 'contrainte d’exclusion GiST sur le créneau, partielle sur CONFIRMED'
+      : 'aucune contrainte d’exclusion — un select+insert ne garantit rien',
+  );
+
+  const generatedSpan = /span\s+tstzrange\s+generated\s+always/u.test(sql);
+  record(
+    'RENDEZ-VOUS',
+    'l’intervalle indexé est GÉNÉRÉ',
+    generatedSpan ? 'PASS' : 'FAIL',
+    generatedSpan ? 'span dérivé de starts_at/ends_at' : 'span écrit par l’application — peut mentir',
+  );
+
+  const oneLive = /hermes_appointments_one_live_per_prospect_idx/u.test(sql);
+  const idempotent = /hermes_appointments_idempotency_idx/u.test(sql);
+  record(
+    'RENDEZ-VOUS',
+    'un seul vivant par prospect, et une clé par tour',
+    oneLive && idempotent ? 'PASS' : 'FAIL',
+    `${oneLive ? 'un-vivant OK' : 'un-vivant ABSENT'} · ${idempotent ? 'idempotence OK' : 'idempotence ABSENTE'}`,
+  );
+
+  // La PURETÉ des deux modules qui décident d'un créneau, lue dans leurs
+  // importations. Un import de base ou de provider ici voudrait dire qu'un
+  // créneau peut se décider — ou s'écrire — ailleurs qu'on ne le croit.
+  for (const [label, file] of [
+    ['moteur de disponibilité', 'availability.ts'],
+    ['lecture des dates', 'temporal.ts'],
+    ['décision d’un tour', 'intent.ts'],
+  ] as const) {
+    const source = readFileSync(join(ROOT, 'src', 'lib', 'booking', file), 'utf8');
+    const imports = (source.match(/^import[\s\S]*?from\s+'[^']+';$/gmu) ?? []).join('\n');
+    const offenders = FORBIDDEN_IMPORTS.filter((name) => imports.includes(name));
+    const readsDb = /from '@\/lib\/db/u.test(imports) && !/import type/u.test(imports);
+    record(
+      'RENDEZ-VOUS',
+      `${label} : pur`,
+      offenders.length === 0 && !readsDb ? 'PASS' : 'FAIL',
+      offenders.length === 0 && !readsDb
+        ? 'aucun provider, aucun rail, aucune lecture de base'
+        : [...offenders, readsDb ? 'importe la base' : ''].filter(Boolean).join(', '),
+    );
+  }
+
+  // §3 — la durée est configurée, jamais devinée.
+  try {
+    const policy = loadBookingPolicy();
+    record(
+      'RENDEZ-VOUS',
+      'durée d’un rendez-vous configurée',
+      'PASS',
+      `bloc ${String(policy.appointmentDurationMinutes)} min · annoncé ` +
+        `${presentedDurationLabel(policy)} · ${policy.timezone} · ` +
+        `préavis ${String(policy.minNoticeMinutes)} min · horizon ${String(policy.maxHorizonDays)} j`,
+    );
+  } catch (error) {
+    record(
+      'RENDEZ-VOUS',
+      'durée d’un rendez-vous configurée',
+      'FAIL',
+      error instanceof Error ? error.message.slice(0, 120) : 'config/booking.json illisible',
+    );
+  }
+
+  // On n'annonce jamais plus long que ce qu'on bloque.
+  //
+  // Le schéma le refuse au chargement, et ce contrôle le RÉAFFIRME sur la
+  // configuration réellement lue : un désaccord ici produirait des rendez-vous
+  // qui se chevauchent dans la vraie vie tout en étant disjoints en base — la
+  // contrainte d'exclusion serait verte, et l'opérateur aurait deux appels qui
+  // se marchent dessus.
+  try {
+    const policy = loadBookingPolicy();
+    const honest = policy.presentedDuration.maxMinutes <= policy.appointmentDurationMinutes;
+    record(
+      'RENDEZ-VOUS',
+      'la durée annoncée tient dans le bloc réservé',
+      honest ? 'PASS' : 'FAIL',
+      `${presentedDurationLabel(policy)} annoncées ⊂ bloc de ${String(policy.appointmentDurationMinutes)} min`,
+    );
+  } catch {
+    record('RENDEZ-VOUS', 'la durée annoncée tient dans le bloc réservé', 'FAIL', 'config illisible');
+  }
+
+  // §23 — aucune dépendance à un calendrier externe.
+  const bookingDir = join(ROOT, 'src', 'lib', 'booking');
+  const externals = ['calendly', 'cal.com', 'googleapis', 'gohighlevel'];
+  const found: string[] = [];
+  for (const file of readdirSync(bookingDir).filter((name) => name.endsWith('.ts'))) {
+    const text = readFileSync(join(bookingDir, file), 'utf8').toLowerCase();
+    for (const needle of externals) if (text.includes(needle)) found.push(`${file}:${needle}`);
+  }
+  record(
+    'RENDEZ-VOUS',
+    'aucun calendrier externe',
+    found.length === 0 ? 'PASS' : 'FAIL',
+    found.length === 0 ? 'natif : la base est la source de vérité' : found.join(', '),
   );
 }
 
@@ -557,6 +695,7 @@ async function main(): Promise<void> {
   certifyRepository();
   certifyVersions();
   certifyNoEffect();
+  certifyNativeBooking();
 
   try {
     const sql = await getSql();

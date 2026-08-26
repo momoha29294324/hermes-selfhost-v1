@@ -1402,3 +1402,168 @@ export const conversationPolicySchema = z.object({
 });
 
 export type ConversationPolicyConfig = z.infer<typeof conversationPolicySchema>;
+
+// ---------------------------------------------------------------------------
+// HERMES-NATIVE-BOOKING-R1 — la DISPONIBILITÉ de l'opérateur
+// ---------------------------------------------------------------------------
+
+/**
+ * Les bornes du rendez-vous natif, dans `config/booking.json`.
+ *
+ * Un fichier À PART de `config/instagram.json` et de `config/conversation.json`,
+ * pour la raison qui a séparé les deux premiers : ils décrivent trois choses
+ * différentes — ce qui ENVOIE, ce qui DÉCIDE de répondre, et ce qui dit QUAND
+ * l'opérateur est joignable — et aucune valeur n'est partagée. Élargir une
+ * disponibilité ne doit pas pouvoir déplacer un plafond d'envoi par ricochet.
+ *
+ * ---------------------------------------------------------------------------
+ * `appointmentDurationMinutes` n'a PAS de défaut, et c'est délibéré
+ * ---------------------------------------------------------------------------
+ * L'audit de HERMES-NATIVE-BOOKING-R1 a relu le dépôt : aucune durée canonique
+ * de rendez-vous n'existait — ni dans `config/`, ni en base, ni dans
+ * l'environnement, ni dans `sales/`. La seule mention d'une durée dans une
+ * consigne commerciale est « quinze minutes », qui appartient au LEXIQUE de
+ * `naturalness.ts` (ce qu'un texte a le droit de dire) et non à un agenda.
+ *
+ * Une valeur par défaut dans ce schéma serait donc une connaissance métier
+ * CACHÉE : personne ne l'aurait décidée, et elle déciderait pourtant de la
+ * durée réelle des rendez-vous d'un vrai commerçant. Le schéma l'exige, le
+ * fichier la porte, et le rapport de round la nomme.
+ */
+export const bookingPolicySchema = z.object({
+  /**
+   * L'agenda visé. UNE seule valeur en R1 — l'opérateur est seul.
+   *
+   * La colonne existe pour que le jour où un second agenda apparaît, la donnée
+   * sache déjà le dire. Ce que ce round n'ouvre pas : la contrainte d'exclusion
+   * de 0061 refuse tout chevauchement TOUS AGENDAS CONFONDUS, ce qui est
+   * strictement plus strict que « par agenda ». Refuser trop est la direction
+   * sûre ; l'assouplir demandera une migration délibérée (`btree_gist`).
+   */
+  calendarKey: z.string().min(1).max(64).default('hermes-operator'),
+  /** Fuseau IANA. Aucune géographie en dur : la chaîne part telle quelle à `Intl`. */
+  timezone: z.string().min(3).max(60).default('Europe/Paris'),
+  /**
+   * Combien de temps le créneau est BLOQUÉ dans l'agenda. Sans défaut — voir
+   * l'en-tête.
+   *
+   * C'est la durée TECHNIQUE : celle qui occupe le calendrier, qui entre dans
+   * la contrainte d'exclusion, et qui décide si deux rendez-vous se
+   * chevauchent. Ce n'est PAS forcément celle qu'on annonce — voir
+   * `presentedDuration`.
+   */
+  appointmentDurationMinutes: z.number().int().min(5).max(480),
+  /**
+   * Ce qu'on ANNONCE au prospect, et qui n'est pas la même chose.
+   *
+   * Un rendez-vous présenté comme « 20 à 25 minutes » se réserve sur un bloc de
+   * 25 : la marge appartient à l'opérateur, pas à la conversation. Les deux
+   * valeurs vivent donc côte à côte plutôt que l'une d'elles étant déduite de
+   * l'autre — les déduire ferait mentir l'une des deux le jour où elles
+   * divergent volontairement.
+   *
+   * L'invariant qui les relie est vérifié plus bas : on n'annonce JAMAIS plus
+   * long que ce qu'on bloque. L'inverse — annoncer plus court que le bloc —
+   * est licite et voulu : c'est la marge.
+   */
+  presentedDuration: z
+    .object({
+      minMinutes: z.number().int().min(5).max(480),
+      maxMinutes: z.number().int().min(5).max(480),
+    })
+    .refine((d) => d.maxMinutes >= d.minMinutes, {
+      message: 'presentedDuration.maxMinutes doit être ≥ minMinutes',
+    })
+    .default({ minMinutes: 20, maxMinutes: 25 }),
+  /**
+   * Le pas des créneaux PROPOSÉS.
+   *
+   * Il ne borne QUE ce que Hermes propose de lui-même. Un créneau demandé par
+   * le prospect à 10 h 20 reste jugé sur la disponibilité réelle, pas sur une
+   * grille : refuser 10 h 20 parce qu'il n'est pas sur le quart d'heure serait
+   * un refus que rien ne justifie.
+   */
+  slotGranularityMinutes: z.number().int().min(5).max(240).default(30),
+  /** Le préavis minimal. Un rendez-vous dans huit minutes n'en est pas un. */
+  minNoticeMinutes: z.number().int().min(0).max(20_160).default(120),
+  /** Jusqu'où en avant on accepte de fixer quoi que ce soit. */
+  maxHorizonDays: z.number().int().min(1).max(120).default(14),
+  /**
+   * Combien de créneaux Hermes propose à la fois.
+   *
+   * Deux, et pas cinq : une liste de créneaux est une liste de questions, et
+   * §8 du dépôt tient qu'un message porte une idée. Le plafond est ici plutôt
+   * que dans le prompt parce qu'un prompt ne se teste pas.
+   */
+  maxProposedSlots: z.number().int().min(1).max(4).default(2),
+  /**
+   * Les fenêtres hebdomadaires de disponibilité.
+   *
+   * Même forme que `instagram.schedule.windows` — jours ISO (1 = lundi),
+   * minutes depuis minuit — pour qu'un opérateur qui a déjà lu l'une sache lire
+   * l'autre.
+   *
+   * SANS DÉFAUT, et c'est le point. Ce champ portait autrefois un repli à
+   * 24 h / 24, 7 j / 7 : une instance qui oubliait de déclarer ses heures se
+   * retrouvait donc à proposer des créneaux à trois heures du matin, un
+   * dimanche, sans que personne ne l'ait décidé. « Non déclaré » ne peut pas
+   * vouloir dire « toujours disponible » — c'est la définition même d'un
+   * défaut permissif, et cette édition n'en livre pas. Un fichier de
+   * configuration sans fenêtre est une ERREUR de chargement, refusée avant
+   * qu'aucun créneau n'existe.
+   */
+  weeklyWindows: z
+    .array(
+      z
+        .object({
+          days: z.array(z.number().int().min(1).max(7)).min(1).max(7),
+          startMinute: z.number().int().min(0).max(1_440),
+          endMinute: z.number().int().min(0).max(1_440),
+        })
+        .refine((w) => w.endMinute > w.startMinute, {
+          message: 'endMinute doit être strictement après startMinute — une fenêtre vide ne se déclare pas',
+        }),
+    )
+    .min(1),
+  /**
+   * Les indisponibilités PONCTUELLES, en instants absolus (ISO 8601).
+   *
+   * Vide en R1. C'est la place que §22 de la mission demande de préparer sans
+   * la remplir : « demain je ne suis pas disponible entre 13 h et 17 h » est
+   * une ligne de plus ici, sans changement de code et sans migration. Ce round
+   * ne construit PAS l'interface conversationnelle qui l'écrirait.
+   */
+  blackouts: z
+    .array(
+      z
+        .object({
+          startsAt: z.string().min(10).max(40),
+          endsAt: z.string().min(10).max(40),
+          reason: z.string().min(1).max(200).optional(),
+        })
+        .refine((b) => Date.parse(b.endsAt) > Date.parse(b.startsAt), {
+          message: 'endsAt doit être strictement après startsAt — une indisponibilité vide ne se déclare pas',
+        }),
+    )
+    .default([]),
+}).superRefine((policy, ctx) => {
+  // On n'annonce jamais plus long que ce qu'on bloque.
+  //
+  // Une durée annoncée supérieure au bloc réservé produirait des rendez-vous
+  // qui se chevauchent DANS LA VRAIE VIE tout en étant parfaitement disjoints
+  // en base : la contrainte d'exclusion serait verte, et l'opérateur aurait
+  // deux appels qui se marchent dessus. C'est le seul désaccord entre ces deux
+  // valeurs qui coûte quelque chose, et il est refusé au chargement.
+  if (policy.presentedDuration.maxMinutes > policy.appointmentDurationMinutes) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['presentedDuration', 'maxMinutes'],
+      message:
+        `on annonce ${String(policy.presentedDuration.maxMinutes)} min pour un créneau bloqué ` +
+        `${String(policy.appointmentDurationMinutes)} min — annoncer plus long que le bloc ` +
+        'produit des rendez-vous qui se chevauchent dans la réalité sans se chevaucher en base',
+    });
+  }
+});
+
+export type BookingPolicyConfig = z.infer<typeof bookingPolicySchema>;

@@ -274,8 +274,28 @@ export function containsForcedSlang(body: string): string | null {
 }
 
 /** Ce qu'une proposition d'échange ressemble, dans NOTRE texte. */
+/**
+ * HERMES-NATIVE-BOOKING-R1 — la FOURCHETTE de durée, ajoutée au lexique.
+ *
+ * Ce motif connaissait « quinze minutes » et « 15 minutes », et rien d'autre.
+ * C'était exact tant que la seule durée que le dépôt savait dire était
+ * celle-là ; ça a cessé de l'être le jour où l'agenda natif annonce
+ * « 20 à 25 minutes ». Une proposition d'échange serait alors passée sous le
+ * radar de `CTA_TOO_EARLY`, c'est-à-dire qu'un appel aurait pu être proposé
+ * deux fois dans le même fil sans que rien ne le relève.
+ *
+ * C'est exactement le trou que `detectPerformanceClaims` (vouvoiement seul) et
+ * `UNSUBSCRIBE_PATTERNS` (vouvoiement seul) ont porté chacun leur tour : un
+ * lexique écrit pour une formulation devient aveugle quand la formulation
+ * change. On ferme celui-ci en lisant la FORME — « N à M minutes » — plutôt
+ * qu'une valeur, pour qu'il survive à un changement de configuration.
+ *
+ * Seule la forme en FOURCHETTE est ajoutée, pas « N minutes » nu : « ça prend
+ * 10 minutes à mettre en place » parle du service, pas d'un rendez-vous, et le
+ * traiter comme une proposition d'appel bloquerait un tour légitime.
+ */
 const CALL_OFFER_PATTERN =
-  /\b(s'appeler|un\s+appel|un\s+[ée]change\s+(court|rapide|de)|se\s+parler|quinze\s+minutes|15\s+minutes|par\s+t[ée]l[ée]phone|de\s+vive\s+voix|on\s+se\s+cale|vous\s+[êe]tes\s+dispo)/i;
+  /\b(s'appeler|un\s+appel|un\s+[ée]change\s+(court|rapide|de)|se\s+parler|quinze\s+minutes|15\s+minutes|\d{1,3}\s*(?:à|a|-|–)\s*\d{1,3}\s*min(?:utes?)?|par\s+t[ée]l[ée]phone|de\s+vive\s+voix|on\s+se\s+cale|vous\s+[êe]tes\s+dispo)/i;
 
 /** Ce qu'un argumentaire ressemble, dans NOTRE texte. */
 const PITCH_PATTERN =

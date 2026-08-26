@@ -134,8 +134,33 @@
  * brouillon sur (analyse, version de prompt), donc le texte écrit sous r7
  * s'inscrit À CÔTÉ de celui de r6 sans jamais l'écraser.
  */
-export const CONVERSATION_PROMPT_VERSION_EMAIL = 'conv-r8-draft-1';
-export const CONVERSATION_PROMPT_VERSION_INSTAGRAM = 'conv-r8-ig-draft-1';
+/*
+ * Pourquoi `r9` — HERMES-NATIVE-BOOKING-R1.
+ *
+ * Le texte rendu au modèle est littéralement différent, à deux endroits, et
+ * les deux comptent :
+ *
+ *   1. un BLOC D'AGENDA apparaît quand la conversation le justifie, portant les
+ *      créneaux réellement libres — calculés depuis `hermes_appointments`, pas
+ *      supposés. Un prompt qui montre des créneaux n'est pas le même qu'un
+ *      prompt qui n'en montre aucun : c'est précisément ce qui donne au modèle
+ *      le droit d'en proposer un ;
+ *   2. le BLOC D'OBJECTIF ne dit plus « aucun lien de réservation n'existe :
+ *      demande simplement une disponibilité — un humain reprend ensuite »
+ *      lorsque l'agenda natif est actif. Il disait vrai avant ce round et
+ *      serait devenu faux après : Hermes fixe désormais la date lui-même.
+ *
+ * La règle du dépôt ne souffre pas d'exception : un prompt différent ne partage
+ * pas un numéro avec un autre. La migration 0056 fait porter l'unicité d'un
+ * brouillon sur (analyse, version de prompt), donc le texte écrit sous r9
+ * s'inscrit À CÔTÉ de celui de r8 sans jamais l'écraser.
+ *
+ * Un tour SANS agenda — la quasi-totalité — reçoit le prompt de r8 au caractère
+ * près : les deux blocs sont conditionnels, et un test le vérifie par
+ * comparaison de chaînes.
+ */
+export const CONVERSATION_PROMPT_VERSION_EMAIL = 'conv-r9-draft-1';
+export const CONVERSATION_PROMPT_VERSION_INSTAGRAM = 'conv-r9-ig-draft-1';
 
 export function conversationPromptVersionFor(channel: 'email' | 'instagram_dm'): string {
   return channel === 'instagram_dm' ? CONVERSATION_PROMPT_VERSION_INSTAGRAM : CONVERSATION_PROMPT_VERSION_EMAIL;

@@ -47,6 +47,11 @@
  * de vérité de trop dans un prompt, jamais un envoi de plus.
  */
 
+import { BOOKING_INTENTS, isBookingIntent, type BookingIntent } from '@/lib/booking/intent';
+import {
+  commitBookingTurn,
+  type BookingTurnOutcome,
+} from '@/lib/booking/runtime';
 import { currentUtterance } from '@/lib/conversation/burst';
 import {
   betterAttempt,
@@ -100,6 +105,7 @@ export const CONVERSATION_TURN_SCHEMA = {
     'evidence_excerpts',
     'current_request',
     'reported_content',
+    'booking_intent',
     'reply',
     'reply_rationale',
     'used_facts',
@@ -124,6 +130,7 @@ export const CONVERSATION_TURN_SCHEMA = {
     },
     current_request: { type: 'string', enum: [...CURRENT_REQUEST_TOPICS] },
     reported_content: { type: 'array', minItems: 0, maxItems: 3, items: { type: 'string', maxLength: 200 } },
+    booking_intent: { type: 'string', enum: [...BOOKING_INTENTS] },
     reply: { type: 'string', maxLength: 1200 },
     reply_rationale: { type: 'string', maxLength: 300 },
     used_facts: { type: 'array', minItems: 0, maxItems: 4, items: { type: 'string' } },
@@ -153,7 +160,16 @@ Tu fais TROIS choses dans le même raisonnement, dans cet ordre, et tu ne décid
 - « je ne te demande pas de garantie » → current_request = NONE.
 - Dans le doute sur une demande qui engage de l'argent, un pourcentage, une garantie, un remboursement ou un engagement : nomme-la. Un doute se tranche du côté prudent.
 
-3. TU ÉCRIS la prochaine phrase de la conversation, en suivant les blocs ci-dessous.
+3. TU DIS ce que ce message demande de faire de l'AGENDA ("booking_intent"), et rien d'autre — tu ne calcules aucune date, tu ne dis pas si un créneau est libre, et tu ne choisis pas de créneau.
+- NONE : ce message ne parle pas de rendez-vous. C'est le cas de très loin le plus fréquent.
+- ASK_AVAILABILITY : elle demande NOS disponibilités (« tu es dispo quand ? »).
+- ACCEPT_PROPOSAL : elle accepte un créneau qu'on vient de lui proposer (« mercredi 15h ça me va », « ok pour jeudi »).
+- PROPOSE_TIME : elle propose ELLE-MÊME un moment (« je préférerais mercredi vers 18h », « demain 14h ? »).
+- RESCHEDULE : elle veut DÉPLACER un rendez-vous déjà pris (« on peut décaler ? », « finalement plutôt 18h ? »).
+- CANCEL : elle veut ANNULER un rendez-vous déjà pris (« je dois annuler », « finalement je ne pourrai pas »).
+Dans le doute, NONE. Une case choisie faute de mieux ferait toucher un agenda réel.
+
+4. TU ÉCRIS la prochaine phrase de la conversation, en suivant les blocs ci-dessous.
 - Si la catégorie est UNSUBSCRIBE, NOT_INTERESTED, BOUNCE, AUTO_REPLY, OTHER ou REVIEW_REQUIRED, "reply" vaut la chaîne vide : on n'écrit rien, et fabriquer un texte mettrait sous les yeux d'un humain pressé un message prêt à être copié-collé.
 - Sinon "reply" est le message, et lui seul : pas de signature, pas de guillemets, pas de préambule.
 
@@ -209,6 +225,14 @@ export interface ConversationTurnResult {
   readonly currentRequest: CurrentRequestTopic;
   /** Ce qu'elle RAPPORTE, selon le modèle. Descriptif, jamais décisif. */
   readonly reportedContent: readonly string[];
+  /**
+   * HERMES-NATIVE-BOOKING-R1 — ce que ce tour a fait de l'agenda.
+   *
+   * `null` quand aucun agenda n'a été consulté (lecture déterministe d'une
+   * non-remise). Sinon, TOUJOURS renseigné — y compris `NO_BOOKING`, qui est la
+   * réponse la plus fréquente et qui mérite d'être lisible.
+   */
+  readonly booking: BookingTurnOutcome | null;
   /** Le brouillon, ou `null` quand aucun texte ne doit être écrit. */
   readonly draft: DraftResult | null;
   /** La compréhension bâtie sur la lecture RÉELLE. */
@@ -224,6 +248,7 @@ export interface ConversationTurnResult {
 
 interface RawTurnAnswer {
   readonly category: ReplyCategory;
+  readonly booking_intent: BookingIntent;
   readonly confidence: number;
   readonly reasoning_summary: string;
   readonly evidence_excerpts: readonly EvidenceExcerpt[];
@@ -269,6 +294,10 @@ function parseTurnAnswer(value: unknown): RawTurnAnswer {
 
   return {
     category: category as ReplyCategory,
+    // Fail-closed : une intention d'agenda illisible vaut `NONE`, c'est-à-dire
+    // « on ne touche pas à l'agenda ». C'est le seul repli qui ne peut rien
+    // écrire, et il est aussi le plus fréquent en vérité.
+    booking_intent: isBookingIntent(parsed['booking_intent']) ? parsed['booking_intent'] : 'NONE',
     confidence: Math.max(0, Math.min(1, confidence)),
     reasoning_summary: summary.slice(0, 600),
     evidence_excerpts: excerpts,
@@ -348,6 +377,7 @@ export async function runConversationTurn(
       }),
       currentRequest: 'NONE' as const,
       reportedContent: Object.freeze([]),
+      booking: null,
       draft: null,
       understanding: null,
       usedFacts: Object.freeze([]),
@@ -444,12 +474,54 @@ export async function runConversationTurn(
     confidence: classification.confidence,
   });
 
+  // ---- 5 bis. L'AGENDA — §12, dans l'ordre qu'il impose --------------------
+  //
+  // « réserver atomiquement » vient AVANT « générer la confirmation », et c'est
+  // l'inverse de ce qu'on ferait naturellement. La raison est entière dans le
+  // §11 de la mission : si l'on écrivait d'abord « c'est réservé pour mercredi
+  // 15 h » et qu'on réservait ensuite, il existerait un instant où le texte est
+  // vrai pour nous et faux dans le monde — et cet instant est précisément celui
+  // où quelqu'un d'autre prend le créneau.
+  //
+  // Le modèle a déjà écrit `answer.reply` en supposant l'accord acquis ; c'est
+  // voulu, et c'est ce qui garde le tour nominal à UN appel. Ce qui décide
+  // ensuite n'est pas ce texte mais `checkBookingStatement`, qui le relit
+  // contre ce que la base porte réellement. Un texte qui confirme un créneau
+  // perdu est BLOQUÉ, et la réécriture unique ci-dessous le remplace par ce
+  // qu'on peut dire honnêtement.
+  //
+  // Rien n'est écrit quand la catégorie n'appelle aucun texte : une demande
+  // d'arrêt ou une non-remise ne touche pas un agenda.
+  const bookingOutcome = isDraftEligible(classification.category)
+    ? await commitBookingTurn(sql, {
+        ref: {
+          prospectId: context.prospect.id,
+          channel: thread.channel,
+          triggerInboundMessageId: context.reply.id,
+          actor: 'hermes',
+        },
+        snapshot: understanding.booking,
+        intent: answer.booking_intent,
+        utterance: utterance.text,
+        now: new Date(context.reply.receivedAt),
+        mayPropose: understanding.mayProposeBooking,
+      })
+    : null;
+
+  // Ce que le texte a le droit d'affirmer, et ce qu'il DOIT dire.
+  const bookingGuardContext = {
+    booked: bookingOutcome?.appointment ?? null,
+    offered: bookingOutcome?.offered ?? [],
+    writtenThisTurn: bookingOutcome?.written !== null && bookingOutcome?.written !== undefined,
+  };
+
   // ---- 6. Le texte, s'il a un sens -----------------------------------------
   if (!isDraftEligible(classification.category)) {
     return Object.freeze({
       classification,
       currentRequest: answer.current_request,
       reportedContent: Object.freeze(answer.reported_content),
+      booking: bookingOutcome,
       draft: null,
       understanding,
       usedFacts: Object.freeze([]),
@@ -464,6 +536,7 @@ export async function runConversationTurn(
       classification,
       currentRequest: answer.current_request,
       reportedContent: Object.freeze(answer.reported_content),
+      booking: bookingOutcome,
       draft: null,
       understanding,
       usedFacts: Object.freeze([]),
@@ -480,6 +553,7 @@ export async function runConversationTurn(
       classification,
       currentRequest: answer.current_request,
       reportedContent: Object.freeze(answer.reported_content),
+      booking: bookingOutcome,
       draft: null,
       understanding,
       usedFacts: Object.freeze([]),
@@ -489,14 +563,19 @@ export async function runConversationTurn(
     });
   }
 
-  let best: Attempt = evaluateConversationDraft(understanding, context, {
-    body: answer.reply,
-    rationale: answer.reply_rationale,
-    usedFacts: answer.used_facts,
-    model: outcome.route.model,
-    effort: outcome.route.effort,
-    modelRunId: outcome.modelRunId,
-  });
+  let best: Attempt = evaluateConversationDraft(
+    understanding,
+    context,
+    {
+      body: answer.reply,
+      rationale: answer.reply_rationale,
+      usedFacts: answer.used_facts,
+      model: outcome.route.model,
+      effort: outcome.route.effort,
+      modelRunId: outcome.modelRunId,
+    },
+    bookingGuardContext,
+  );
   let attempts = 1;
   let llmCalls = 1;
 
@@ -508,13 +587,45 @@ export async function runConversationTurn(
   //
   // Le prompt est celui de la compréhension RÉELLE, cette fois — c'est le seul
   // endroit où la différence compte, et elle joue dans le bon sens.
-  if (best.naturalness.verdict === 'UNNATURAL') {
-    const realComposed = composeConversationPrompt(understanding, options);
+  // HERMES-NATIVE-BOOKING-R1 §12 — une réécriture de PLUS peut être due, et
+  // pour une raison qui n'a rien à voir avec le style.
+  //
+  // Le texte a été écrit avant que la base ne tranche. Trois choses ont pu se
+  // produire depuis : le créneau a été réservé (le texte doit le nommer), il
+  // vient d'être pris par quelqu'un d'autre (le texte ne doit surtout pas dire
+  // qu'il est réservé), ou le modèle a nommé un créneau que le moteur n'a
+  // jamais rendu. Les trois sortent de `checkBookingStatement` en constats
+  // BLOQUANTS, et les trois se réparent avec la même chose : les faits.
+  //
+  // C'est le SECOND appel, jamais un troisième — le même budget que la
+  // réécriture de naturalité, et le même plafond. Sur le chemin nominal — un
+  // créneau libre qui le reste — aucun de ces constats n'existe et le tour
+  // coûte UN appel, comme avant ce round.
+  const bookingFlags = best.guardrailFlags.filter((flagged) =>
+    flagged.code.startsWith('booking_'),
+  );
+
+  if (best.naturalness.verdict === 'UNNATURAL' || bookingFlags.length > 0) {
+    const realComposed = composeConversationPrompt(understanding, {
+      ...options,
+      // Les FAITS d'agenda, tels que la base les porte maintenant. Sans eux, la
+      // réécriture répéterait la même erreur avec d'autres mots.
+      bookingJustBooked: bookingOutcome?.written ?? null,
+      bookingLostSlot: bookingOutcome?.lostSlot ?? null,
+      bookingOffer: bookingOutcome?.offered ?? null,
+    });
     try {
       const repairPrompt = [
         realComposed.prompt,
         '',
         renderCorrections(best.naturalness),
+        ...(bookingFlags.length === 0
+          ? []
+          : [
+              '',
+              'CE QUE TON TEXTE AFFIRME À TORT SUR LE RENDEZ-VOUS :',
+              ...bookingFlags.map((flagged) => `- ${flagged.message}`),
+            ]),
         '',
         'Réécris UNIQUEMENT le message. Ne change pas ta lecture du tour.',
       ].join('\n');
@@ -542,14 +653,19 @@ export async function runConversationTurn(
         attempts = 2;
         best = betterAttempt(
           best,
-          evaluateConversationDraft(understanding, context, {
-            body: repaired.data.reply,
-            rationale: repaired.data.reply_rationale,
-            usedFacts: repaired.data.used_facts,
-            model: repaired.route.model,
-            effort: repaired.route.effort,
-            modelRunId: repaired.modelRunId,
-          }),
+          evaluateConversationDraft(
+            understanding,
+            context,
+            {
+              body: repaired.data.reply,
+              rationale: repaired.data.reply_rationale,
+              usedFacts: repaired.data.used_facts,
+              model: repaired.route.model,
+              effort: repaired.route.effort,
+              modelRunId: repaired.modelRunId,
+            },
+            bookingGuardContext,
+          ),
         );
       }
     } catch (error) {
@@ -566,6 +682,7 @@ export async function runConversationTurn(
     classification,
     currentRequest: answer.current_request,
     reportedContent: Object.freeze(answer.reported_content),
+    booking: bookingOutcome,
     draft: best.draft,
     understanding,
     usedFacts: best.usedFacts,

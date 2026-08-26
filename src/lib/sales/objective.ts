@@ -88,7 +88,7 @@ export const HERMES_PRIMARY_COMMERCIAL_OBJECTIVE = 'QUALIFIED_APPOINTMENT_BOOKED
  * seul ? », « que peut-on engager ? », « cela vaut-il un appel ? » — et
  * partager une étiquette ferait couvrir l'une par les décisions de l'autre.
  */
-export const APPOINTMENT_POLICY_VERSION = 'hermes-appointment-r2';
+export const APPOINTMENT_POLICY_VERSION = 'hermes-appointment-r3';
 
 /**
  * Ce que Hermes ne fait JAMAIS, quelle que soit la qualification.
@@ -102,6 +102,31 @@ export const HERMES_OUT_OF_SCOPE: readonly string[] = Object.freeze([
   'obtenir un paiement ou faire signer quoi que ce soit',
   'dérouler un entretien de vente complet par messages',
   'fixer une date ferme, choisir un créneau, ou écrire dans un agenda',
+]);
+
+/**
+ * HERMES-NATIVE-BOOKING-R1 — le même hors-champ, MOINS la dernière ligne.
+ *
+ * Cette liste remplace la précédente quand — et seulement quand — l'agenda
+ * natif porte des créneaux réels pour ce tour. La raison est celle que ce dépôt
+ * répète : laisser « ne fixe aucune date » dans le prompt d'un rail qui vient
+ * précisément d'en fixer une serait le pire des deux mondes — une consigne
+ * écrite qui nie ce que le code fait, sans que personne sache laquelle des deux
+ * fait foi.
+ *
+ * Les quatre autres interdits ne bougent pas d'un pouce, et le cinquième n'est
+ * pas remplacé par une permission : ce que Hermes fait n'est pas « écrire dans
+ * un agenda » à sa guise, c'est proposer les créneaux que le moteur a calculés
+ * et confirmer celui que la personne choisit. `closingAllowed` reste `false` en
+ * littéral de type, et `HUMAN_CLOSE_REQUIRED` reste la sortie de toute
+ * conversation qualifiée qui n'aboutit pas à un créneau.
+ */
+export const HERMES_OUT_OF_SCOPE_WITH_NATIVE_BOOKING: readonly string[] = Object.freeze([
+  'conclure une vente dans un message',
+  'négocier un contrat ou ses conditions',
+  'obtenir un paiement ou faire signer quoi que ce soit',
+  'dérouler un entretien de vente complet par messages',
+  'inventer un créneau, une date ou une disponibilité que le système ne t’a pas donnée',
 ]);
 
 /** Le verdict de qualification pour un rendez-vous. */
@@ -488,11 +513,24 @@ export function stepAttributableToHermes(step: CommercialFunnelStep): boolean {
  * Une seule source : si le périmètre change, le prompt change avec lui.
  */
 export function renderObjectiveBlock(
-  booking: { readonly mechanism: BookingMechanism; readonly bookingUrl: string | null } = {
+  booking: {
+    readonly mechanism: BookingMechanism;
+    readonly bookingUrl: string | null;
+    /**
+     * HERMES-NATIVE-BOOKING-R1 — l'agenda natif porte-t-il des créneaux réels
+     * pour ce tour ?
+     *
+     * `false` par défaut, et le défaut rend le bloc IDENTIQUE au caractère près
+     * à celui d'avant ce round. C'est ce qui permet de vérifier par comparaison
+     * de chaînes qu'un tour sans agenda n'a pas changé de prompt.
+     */
+    readonly nativeBooking?: boolean;
+  } = {
     mechanism: BOOKING_MECHANISM_DEFAULT,
     bookingUrl: null,
   },
 ): string {
+  const native = booking.nativeBooking === true;
   const lines: string[] = [
     `TON OBJECTIF (${APPOINTMENT_POLICY_VERSION}) — ${HERMES_PRIMARY_COMMERCIAL_OBJECTIVE}`,
     '',
@@ -502,7 +540,9 @@ export function renderObjectiveBlock(
     '',
     'Tu ne fais JAMAIS :',
   ];
-  for (const entry of HERMES_OUT_OF_SCOPE) lines.push(`- ${entry}`);
+  for (const entry of native ? HERMES_OUT_OF_SCOPE_WITH_NATIVE_BOOKING : HERMES_OUT_OF_SCOPE) {
+    lines.push(`- ${entry}`);
+  }
   lines.push(
     '',
     'Quand un échange devient l’étape naturelle, propose-le simplement et arrête de dérouler :',
@@ -516,6 +556,20 @@ export function renderObjectiveBlock(
   // le jour où un lien existe, ou l'inverse — qui est la version coûteuse,
   // puisqu'elle ferait inventer une URL au modèle.
   lines.push('');
+  if (native) {
+    // L'agenda natif : pas de lien, pas de passage de relais pour prendre la
+    // date. Les créneaux eux-mêmes sont dans le bloc d'agenda, jamais ici — ce
+    // bloc dit ce que Hermes a le droit de FAIRE, l'autre dit ce qui est LIBRE.
+    lines.push(
+      'Tu peux fixer le rendez-vous toi-même, dans la conversation : aucun lien, aucun',
+      'formulaire, aucune page à ouvrir. Tu proposes les créneaux que le système te donne,',
+      'et quand la personne en choisit un, tu confirmes.',
+      'Tu ne dis JAMAIS qu’un rendez-vous est pris tant que le système ne te l’a pas confirmé,',
+      'et tu n’annonces aucun créneau qui ne figure pas dans la liste qu’il t’a donnée.',
+      'L’appel lui-même, c’est un humain qui le passe, jamais toi.',
+    );
+    return lines.join('\n');
+  }
   if (booking.mechanism === 'BOOKING_MECHANISM_READY' && booking.bookingUrl !== null) {
     lines.push(
       'Pour réserver, il existe UN lien, et un seul :',

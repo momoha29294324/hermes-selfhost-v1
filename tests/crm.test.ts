@@ -473,6 +473,7 @@ describe('répartition des colonnes du pipeline', () => {
       CONTACTED: 0,
       REPLIED: 0,
       INTERESTED: 0,
+      APPOINTMENT: 0,
       NOT_NOW: 0,
       NOT_INTERESTED: 0,
       CLIENT: 0,
@@ -482,7 +483,10 @@ describe('répartition des colonnes du pipeline', () => {
     };
   }
 
-  it('les cinq étapes actives restent des colonnes, même vides', () => {
+  it('les six étapes actives restent des colonnes, même vides', () => {
+    // HERMES-NATIVE-BOOKING-R1 §17 — « Rendez-vous pris » est la sixième. Elle
+    // est ACTIVE et non terminale : un rendez-vous peut être annulé ou déplacé,
+    // et le prospect continue d'avancer.
     const layout = boardLayout(counts({ QUALIFIED: 73, READY_TO_CONTACT: 4, CONTACTED: 1 }));
     expect(layout.primary.map((lane) => lane.key)).toEqual([
       'QUALIFIED',
@@ -490,6 +494,7 @@ describe('répartition des colonnes du pipeline', () => {
       'CONTACTED',
       'REPLIED',
       'INTERESTED',
+      'APPOINTMENT',
     ]);
   });
 
@@ -519,13 +524,13 @@ describe('répartition des colonnes du pipeline', () => {
     }
   });
 
-  it('les dix colonnes sont toujours présentes, quelle que soit la répartition', () => {
+  it('les onze colonnes sont toujours présentes, quelle que soit la répartition', () => {
     for (const patch of [{}, { PROTECTED: 5 }, { NOT_NOW: 1, CLIENT: 1, REVIEW_REQUIRED: 1 }]) {
       const layout = boardLayout(counts(patch));
       const keys = [...layout.primary, ...layout.terminal, ...layout.collapsed].map(
         (lane) => lane.key,
       );
-      expect(new Set(keys).size).toBe(10);
+      expect(new Set(keys).size).toBe(11);
     }
   });
 });
@@ -1274,6 +1279,7 @@ function fakeProspect(patch: Partial<CrmProspect> & { id: string; displayName: s
     lastReplyClassification: null,
     recommendedNextAction: null,
     isClient: false,
+    hasConfirmedAppointment: false,
     doNotContact: false,
     dedupeStatus: 'unique',
     campaignSlug: 'test',

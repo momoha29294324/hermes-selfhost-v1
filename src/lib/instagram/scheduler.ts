@@ -2,6 +2,7 @@ import type { Sql } from '@/lib/db/sql';
 import type { InstagramRailConfig } from '@/lib/config/schema';
 import { evaluateEffectCaps, loadSafetySnapshot, type SafetySnapshot } from '@/lib/instagram/safety';
 import type { GateRecord, InstagramSkipReason } from '@/lib/instagram/types';
+import { zonedParts, zonedWallClockToUtc } from '@/lib/time/zoned';
 
 /**
  * IG3 §4 — l'ordonnanceur : QUAND, et pourquoi pas maintenant.
@@ -34,120 +35,20 @@ import type { GateRecord, InstagramSkipReason } from '@/lib/instagram/types';
  */
 
 // ---------------------------------------------------------------------------
-// Heure locale d'un fuseau, sans dépendance
+// Heure locale d'un fuseau — une seule implémentation, partagée
 // ---------------------------------------------------------------------------
-
-export interface ZonedParts {
-  readonly year: number;
-  /** 1–12. */
-  readonly month: number;
-  readonly day: number;
-  /** ISO : 1 = lundi … 7 = dimanche, comme `config.schedule.windows[].days`. */
-  readonly isoWeekday: number;
-  /** Minutes depuis minuit local. */
-  readonly minuteOfDay: number;
-}
-
-const WEEKDAY_TO_ISO: Readonly<Record<string, number>> = Object.freeze({
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6,
-  Sun: 7,
-});
-
-/**
- * Le seul endroit du rail qui traduit un instant en heure locale.
- *
- * `Intl.DateTimeFormat` plutôt qu'un décalage stocké : un décalage fixe se
- * trompe deux fois par an, et se tromperait précisément le jour où une fenêtre
- * « 9 h – 20 h » compte le plus. `Intl` connaît la base tzdata du système et
- * gère l'heure d'été sans que ce fichier ait à savoir qu'elle existe.
- *
- * Le formateur est mémoïsé par fuseau : le construire coûte cher, et
- * l'ordonnanceur l'appelle en boucle quand il cherche la prochaine ouverture.
- */
-const formatterCache = new Map<string, Intl.DateTimeFormat>();
-
-function formatterFor(timezone: string): Intl.DateTimeFormat {
-  const cached = formatterCache.get(timezone);
-  if (cached) return cached;
-  const created = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    weekday: 'short',
-  });
-  formatterCache.set(timezone, created);
-  return created;
-}
-
-export function zonedParts(instant: Date, timezone: string): ZonedParts {
-  const parts = formatterFor(timezone).formatToParts(instant);
-  const read = (type: Intl.DateTimeFormatPartTypes): string => parts.find((p) => p.type === type)?.value ?? '';
-
-  const isoWeekday = WEEKDAY_TO_ISO[read('weekday')];
-  if (isoWeekday === undefined) {
-    // Un fuseau invalide fait lever `Intl` avant d'arriver ici ; ce refus couvre
-    // le cas d'un environnement dont la locale rendrait un jour inconnu. Deviner
-    // « lundi » ouvrirait une fenêtre que personne n'a décidée.
-    throw new Error(`fuseau « ${timezone} » : jour de semaine illisible (« ${read('weekday')} »)`);
-  }
-
-  // `Intl` rend « 24 » pour minuit dans certaines locales en hour12:false.
-  const hour = Number.parseInt(read('hour'), 10) % 24;
-
-  return Object.freeze({
-    year: Number.parseInt(read('year'), 10),
-    month: Number.parseInt(read('month'), 10),
-    day: Number.parseInt(read('day'), 10),
-    isoWeekday,
-    minuteOfDay: hour * 60 + Number.parseInt(read('minute'), 10),
-  });
-}
-
-/**
- * L'opération inverse : l'instant UTC auquel l'horloge murale du fuseau
- * affiche cette date et cette minute.
- *
- * Il n'existe pas de primitive standard pour cela, d'où le point fixe : on
- * suppose d'abord que l'horloge murale EST de l'UTC, on mesure l'écart réel à
- * cet instant, on corrige, et on recommence. Deux itérations suffisent partout
- * (la seconde ne sert qu'aux instants situés juste au bord d'un changement
- * d'heure, où l'écart mesuré au premier essai est celui de l'ancien régime).
- *
- * Aux heures « sautées » d'un passage à l'heure d'été (02:30 le dernier
- * dimanche de mars en Europe), aucune réponse n'est exacte : le point fixe rend
- * alors l'instant immédiatement après le saut, c'est-à-dire la première
- * milliseconde où la fenêtre demandée existe réellement. C'est le
- * comportement souhaitable pour une OUVERTURE de fenêtre — on n'ouvre jamais
- * plus tôt que demandé.
- */
-export function zonedWallClockToUtc(
-  year: number,
-  month: number,
-  day: number,
-  minuteOfDay: number,
-  timezone: string,
-): Date {
-  const wall = Date.UTC(year, month - 1, day, 0, minuteOfDay, 0, 0);
-  let guess = wall;
-  for (let i = 0; i < 3; i += 1) {
-    const seen = zonedParts(new Date(guess), timezone);
-    const seenAsUtc = Date.UTC(seen.year, seen.month - 1, seen.day, 0, seen.minuteOfDay, 0, 0);
-    const offset = seenAsUtc - guess;
-    const next = wall - offset;
-    if (next === guess) break;
-    guess = next;
-  }
-  return new Date(guess);
-}
+//
+// HERMES-NATIVE-BOOKING-R1 — `zonedParts` et `zonedWallClockToUtc` vivaient ici
+// depuis IG3. Elles ont été DÉPLACÉES telles quelles dans `@/lib/time/zoned`,
+// sans qu'une ligne de leur comportement change, pour que le moteur de
+// disponibilité du rendez-vous natif puisse les utiliser sans importer la base,
+// les plafonds et la table de sûreté que ce fichier importe.
+//
+// Elles sont réexportées ici : aucun appelant existant ne change, et il
+// n'existe toujours qu'UNE arithmétique du temps dans ce dépôt. Deux
+// arithmétiques du temps divergent toujours sur la même chose — le jour du
+// changement d'heure.
+export { zonedParts, zonedWallClockToUtc, type ZonedParts } from '@/lib/time/zoned';
 
 // ---------------------------------------------------------------------------
 // Fenêtres

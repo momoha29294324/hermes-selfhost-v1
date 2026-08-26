@@ -121,7 +121,16 @@ import type { OutreachState, ProcessableCorrelation, ReplyCategory } from '@/lib
  * effet tenté) sans le ressusciter : `recordConversationPlan` inscrit le tour
  * rejugé À CÔTÉ, sur une clé d'idempotence neuve.
  */
-export const CONVERSATION_POLICY_VERSION = 'hermes-conversation-r12';
+/*
+ * `r13` — HERMES-NATIVE-BOOKING-R1.
+ *
+ * Une porte de plus décide de ce qui part : `checkBookingStatement` peut
+ * BLOQUER un brouillon qui affirme un rendez-vous que la base ne porte pas, ou
+ * qui nomme un créneau que le moteur n'a pas rendu. Une décision rendue sous
+ * r12 n'a jamais été soumise à ce contrôle, donc ne couvre pas les règles
+ * d'aujourd'hui — et le crochet pré-effet referme les plans d'avant.
+ */
+export const CONVERSATION_POLICY_VERSION = 'hermes-conversation-r13';
 
 /**
  * HERMES-ACQUISITION-SERVICE-TRUTH-R1 — pourquoi r8.

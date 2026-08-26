@@ -45,6 +45,10 @@ export function turnAnswer(
     evidence_excerpts: classify?.evidence_excerpts ?? [],
     current_request: 'NONE',
     reported_content: [],
+    // HERMES-NATIVE-BOOKING-R1 — `NONE` par défaut : c'est la valeur qui ne
+    // touche à AUCUN agenda, donc celle qui laisse les tests écrits avant ce
+    // round éprouver exactement ce qu'ils éprouvaient.
+    booking_intent: 'NONE',
     reply: draft?.body ?? '',
     reply_rationale: draft?.rationale ?? 'brouillon de test',
     used_facts: draft?.used_facts ?? [],

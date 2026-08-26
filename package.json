@@ -64,6 +64,7 @@
     "learning:report": "tsx src/cli/learning-report.ts",
     "booking:status": "tsx src/cli/booking-destination.ts",
     "booking:destination": "tsx src/cli/booking-destination.ts",
+    "booking:agenda": "tsx src/cli/booking-agenda.ts",
     "r6b:crm:status": "tsx src/cli/r6b-crm-status.ts",
     "r6b:crm:verify": "tsx src/cli/r6b-crm-verify.ts",
     "r6b:crm:sync": "tsx src/cli/r6b-crm-sync.ts",

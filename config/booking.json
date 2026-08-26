@@ -1,0 +1,14 @@
+{
+  "calendarKey": "hermes-operator",
+  "timezone": "Europe/Paris",
+  "appointmentDurationMinutes": 30,
+  "presentedDuration": { "minMinutes": 25, "maxMinutes": 30 },
+  "slotGranularityMinutes": 30,
+  "minNoticeMinutes": 120,
+  "maxHorizonDays": 14,
+  "maxProposedSlots": 2,
+  "weeklyWindows": [
+    { "days": [1, 2, 3, 4, 5], "startMinute": 540, "endMinute": 1080 }
+  ],
+  "blackouts": []
+}

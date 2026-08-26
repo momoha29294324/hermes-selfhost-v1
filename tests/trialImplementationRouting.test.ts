@@ -523,10 +523,10 @@ describe('E — aucune exception pour la coquille', () => {
   });
 
   it('les versions bougent, donc referment ce qui a été jugé sous les anciennes', () => {
-    expect(CONVERSATION_POLICY_VERSION).toBe('hermes-conversation-r12');
+    expect(CONVERSATION_POLICY_VERSION).toBe('hermes-conversation-r13');
     expect(COMMERCIAL_POLICY_VERSION).toBe('hermes-commercial-r7');
-    expect(conversationPromptVersionFor('email')).toBe('conv-r8-draft-1');
-    expect(conversationPromptVersionFor('instagram_dm')).toBe('conv-r8-ig-draft-1');
+    expect(conversationPromptVersionFor('email')).toBe('conv-r9-draft-1');
+    expect(conversationPromptVersionFor('instagram_dm')).toBe('conv-r9-ig-draft-1');
   });
 });
 

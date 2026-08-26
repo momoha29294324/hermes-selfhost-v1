@@ -526,7 +526,7 @@ describe('HERMES-CONVERSATION-R2 §34 — décision d’auto-réponse', () => {
 
   it('la politique conversationnelle ne partage pas son étiquette avec le ciblage', async () => {
     const targeting = await import('@/lib/instagram/autonomousPolicy');
-    expect(CONVERSATION_POLICY_VERSION).toBe('hermes-conversation-r12');
+    expect(CONVERSATION_POLICY_VERSION).toBe('hermes-conversation-r13');
     expect(CONVERSATION_POLICY_VERSION).not.toBe(targeting.AUTONOMOUS_POLICY_VERSION);
   });
 

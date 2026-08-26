@@ -9,6 +9,7 @@ import {
   instagramRailSchema,
   instagramObserverSchema,
   conversationPolicySchema,
+  bookingPolicySchema,
   socialMaturitySchema,
   icpProfileSchema,
   commercialIntelligenceProfileSchema,
@@ -19,6 +20,7 @@ import {
   type InstagramRailConfig,
   type InstagramObserverConfig,
   type ConversationPolicyConfig,
+  type BookingPolicyConfig,
   type SocialMaturityProfile,
   type IcpProfile,
   type CommercialIntelligenceProfile,
@@ -311,4 +313,21 @@ export function loadConversationPolicy(): ConversationPolicyConfig {
     resolve(CONFIG_ROOT, 'conversation.yaml'),
   ]);
   return conversationPolicySchema.parse(readStructured(path));
+}
+
+/**
+ * HERMES-NATIVE-BOOKING-R1 — les bornes du rendez-vous natif.
+ *
+ * Fichier OBLIGATOIRE, comme celui du rail Instagram et de la conversation, et
+ * pour la même raison : un moteur de disponibilité qui démarrerait sur des
+ * valeurs implicites déciderait à la place de l'opérateur quand il est
+ * joignable. L'absence de configuration est une erreur, jamais un défaut
+ * permissif — et `appointmentDurationMinutes` n'a même pas de défaut de schéma.
+ */
+export function loadBookingPolicy(): BookingPolicyConfig {
+  const path = firstExisting([
+    resolve(CONFIG_ROOT, 'booking.json'),
+    resolve(CONFIG_ROOT, 'booking.yaml'),
+  ]);
+  return bookingPolicySchema.parse(readStructured(path));
 }

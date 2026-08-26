@@ -619,7 +619,7 @@ describe('§18.20 / §19 — la sortie reste PROPOSED et rien ne part', () => {
     // `prompt_version` cesse de dire ce qui a réellement été demandé. R1.1 a
     // réécrit le prompt (§6) : il porte donc son propre numéro, distinct de
     // celui de R6B-D2 comme de celui de R1.
-    expect(reply.draft?.promptVersion).toBe('conv-r8-draft-1');
+    expect(reply.draft?.promptVersion).toBe('conv-r9-draft-1');
     expect(reply.draft?.promptVersion).not.toBe('conv-r2-draft-1');
     expect(reply.draft?.promptVersion).not.toBe('r6b-d2-draft-1');
     expect(reply.draft?.promptVersion).not.toBe('conv-r1-draft-1');

@@ -37,6 +37,7 @@
 import Link from 'next/link';
 import { Card, EmptyState } from '@/app/crm/ui';
 import { ActivityEvent, ChannelLine, Row, ScoreCard } from './parts';
+import { AppointmentsCard } from './appointments';
 import { ObservationsCard, OpportunityCard, RiskCard } from './research';
 import { TabLink } from './tabs';
 import type { CrmProspect, CrmWorkspace } from '@/lib/crm/queries';
@@ -65,7 +66,7 @@ export function OverviewTab({
   workspace: CrmWorkspace;
   now: number;
 }) {
-  const { prospect, research, score, timeline } = workspace;
+  const { prospect, research, score, timeline, appointments } = workspace;
   // Groupé par jour même en version courte : « 14:29 » seul ne dit pas de quel
   // jour il parle, et douze événements peuvent enjamber trois semaines.
   const recent = groupTimelineByDay(timeline.slice(0, RECENT_LIMIT), now);
@@ -157,6 +158,14 @@ export function OverviewTab({
        * défilement interne — sur la carte dont le rôle est précisément de dire
        * par où joindre quelqu'un. */}
       <div className="crm-pane">
+        {/*
+          HERMES-NATIVE-BOOKING-R1 — le rendez-vous, AVANT l'identité et les
+          canaux. Quand un créneau est pris, c'est la première chose qu'un
+          opérateur doit voir : elle change ce qu'il faut faire ensuite.
+          La carte n'apparaît pas du tout quand il n'y a aucun rendez-vous —
+          un bloc « aucun rendez-vous » sur chaque fiche n'apprendrait rien.
+        */}
+        <AppointmentsCard appointments={appointments} />
         <IdentityChannelsCard prospect={prospect} active={active} />
       </div>
 
