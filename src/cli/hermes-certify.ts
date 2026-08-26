@@ -255,12 +255,19 @@ function certifyNoEffect(): void {
  *     connaissance métier cachée, et un défaut de schéma la rendrait invisible.
  */
 function certifyNativeBooking(): void {
-  const migration = join(ROOT, 'db', 'migrations', '0061_hermes_native_booking_r1.sql');
+  // La migration est trouvée par son NOM, pas par son numéro : un numéro
+  // dépend de la lignée dans laquelle la migration a été livrée, et une
+  // certification qui le code en dur échoue chez quiconque a une histoire de
+  // schéma légèrement différente — pour une raison qui n'a rien à voir avec
+  // ce qu'elle prétend vérifier.
+  const dir = join(ROOT, 'db', 'migrations');
+  const file = readdirSync(dir).find((name) => name.endsWith('_hermes_native_booking_r1.sql'));
   let sql = '';
   try {
-    sql = readFileSync(migration, 'utf8');
+    if (file === undefined) throw new Error('absente');
+    sql = readFileSync(join(dir, file), 'utf8');
   } catch {
-    record('RENDEZ-VOUS', 'migration présente', 'FAIL', '0061 introuvable');
+    record('RENDEZ-VOUS', 'migration présente', 'FAIL', 'aucune migration hermes_native_booking_r1');
     return;
   }
 
