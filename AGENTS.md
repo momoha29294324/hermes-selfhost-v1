@@ -122,6 +122,124 @@ disponibilité non déclarée           = erreur de configuration, jamais « tou
 migration déjà publiée               = ne se modifie plus, commentaire compris
 ```
 
+## Psychologie de la conversation — principes de développement
+
+Cette section est une DIRECTION, pas un compte rendu. Elle décrit comment un
+travail futur sur la conduite de conversation doit être pensé dans ce dépôt.
+Elle ne décrit pas ce que la version actuelle fait.
+
+**Ce qui existe aujourd'hui**, et qu'il ne faut pas confondre avec une
+psychologie : une taxonomie fermée de catégories de réponse
+(`src/lib/replies/taxonomy.ts`), un état de conversation DÉRIVÉ des messages et
+des analyses déjà écrites (`src/lib/conversation/state.ts`, jamais stocké), des
+signaux lexicaux (objections, sujets de question), une échelle d'objectif
+commercial, et des contrôles de naturalité et d'ancrage. Il n'y a **aucune
+machine à états psychologique**, aucune modélisation de la confiance ou de la
+réactance, et rien qui prétende lire une intention.
+
+### L'objectif
+
+Aider une personne à voir clair sur sa situation et à prendre une décision utile
+pour elle. C'est tout, et c'est déjà beaucoup.
+
+Ce qui a le droit de convaincre : la pertinence, une compréhension réelle de son
+activité, une bonne question, un recadrage juste, une valeur concrète, la
+confiance, et le fait de lui laisser formuler elle-même son problème et ce
+qu'elle voudrait changer. Une personne qui énonce sa propre contrainte est mieux
+servie qu'une personne à qui on l'a annoncée.
+
+Ce qui n'en a pas le droit : la manipulation et la tromperie. La frontière est
+plus bas, et elle est dure.
+
+### Ce qu'un travail futur pourrait raisonner
+
+Un tour de conversation pourrait un jour tenir compte de l'engagement, de la
+confiance, de la curiosité, de la réactance, de la conscience du problème, du
+désir de changement, du risque perçu, de la confiance en soi, des objections, de
+la part de discours qui va vers le changement ou qui le retient, et de l'état de
+préparation à une étape suivante.
+
+Ce sont des DIRECTIONS. Écrire ici qu'elles existent ne les fait pas exister, et
+personne ne doit citer ce paragraphe comme une capacité livrée.
+
+**Un objectif conversationnel par tour.** Qualifier, convaincre, prouver,
+conclure et fixer un rendez-vous dans le même message est la façon la plus sûre
+de ne rien faire de tout cela. Le tour 1 vise déjà UNE chose — une réponse
+humaine — et la même discipline vaut pour les suivants.
+
+### Direction de comportement
+
+Comprendre avant de proposer. Répondre à ce qui a réellement été dit. Tenir la
+continuité du fil plutôt que repartir de zéro. Poser des questions qui coûtent
+peu à répondre. Aider la personne à mettre des mots sur ses contraintes. Faire
+apparaître naturellement l'écart entre la situation actuelle et celle qu'elle
+souhaite. N'apporter une preuve que lorsqu'elle est pertinente. Traiter une
+objection comme une INFORMATION, jamais comme un obstacle à écraser. Baisser la
+pression inutile. Préserver l'autonomie de la personne. Faire du rendez-vous une
+suite logique, pas un moment de conversion arraché.
+
+### La frontière éthique
+
+Un travail de persuasion n'introduit JAMAIS, sous aucune version de politique et
+sous aucune justification de performance :
+
+```text
+une intention d'achat feinte              une expérience personnelle inventée
+une preuve sociale fabriquée              une étude de cas inventée
+un résultat inventé                       une rareté fabriquée
+une urgence fabriquée                     un fait matériel dissimulé
+une identité trompeuse                    une garantie non fondée
+une insistance après un refus clair       l'exploitation d'une vulnérabilité
+un accord obtenu sans intention éclairée
+```
+
+Pas de piste des « trois oui ». Pas de fausse réciprocité. Pas de manipulation
+par la peur. Pas d'accord feint pour faire tomber une résistance.
+
+Ces lignes ne sont pas une préférence de style : elles prolongent les interdits
+n° 2 (ne jamais inventer une donnée) et n° 3 (aucune preuve chiffrée citable
+sans ligne `case_studies` sourcée), qui restent la règle et ne se desserrent pas
+pour un gain de conversion.
+
+### Ce qui est du code, et ce qui ne doit pas l'être
+
+La convention technique de ce dépôt dit que **toute logique déterministe reste
+du code testé**. Elle vise ce qui DÉCIDE — l'éligibilité, les plafonds, les
+garde-fous, ce qui part sans relecture humaine. Elle ne dit pas que chaque
+préférence conversationnelle doit devenir une porte.
+
+```text
+jugement conversationnel nuancé       -> prompt et consigne de rédaction
+échec intolérable                     -> garde déterministe, testée
+affirmation factuelle ou commerciale  -> preuve ancrée, sinon escalade
+naturalité et qualité de persuasion   -> corpus, tests, relecture à l'aveugle
+```
+
+Transformer une nuance en règle rend Hermes robotique, et une garde qui refuse
+la mauvaise chose pour la mauvaise raison est plus dangereuse qu'une garde
+absente : elle a l'air de travailler. En cas de doute sur le versant subjectif,
+on écrit une consigne et un cas de corpus, pas une expression régulière.
+
+### Méthode, si quelqu'un l'implémente
+
+1. hors ligne d'abord — en OMBRE, à côté du chemin canonique, sans qu'aucun
+   texte ne parte (`replyShadow.ts` montre la forme) ;
+2. sur des conversations SYNTHÉTIQUES, ou assainies au point de ne plus désigner
+   personne ;
+3. comparer la référence et la version qui raisonne, sur les mêmes entrées ;
+4. mesurer, séparément : naturalité, confiance, réponse à ce qui a été dit,
+   réactance provoquée, pertinence, qualité de la progression, honnêteté,
+   niveau de pression ;
+5. relire à l'aveugle — celui qui a écrit la consigne ne sait pas quelle sortie
+   vient d'elle ;
+6. vérifier que les invariants factuels et de sûreté n'ont pas bougé d'un cran ;
+7. et seulement alors, envisager un canari borné.
+
+**On n'optimise pas le taux de réponse, le taux de rendez-vous ou le taux de
+conversion au prix de la vérité, de la confiance ou de l'autonomie de la
+personne d'en face.** Un chiffre qui monte parce qu'on a menti est une
+régression, et aucune mesure de ce dépôt ne le dira à votre place.
+
 ## Avant de livrer
 
 ```bash
