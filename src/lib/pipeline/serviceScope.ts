@@ -1,5 +1,5 @@
 import { stripAccents } from '@/lib/identity/normalize';
-import type { NicheConfig, NonCleaningServiceFamily } from '@/lib/config/schema';
+import type { NicheConfig, OutOfScopeServiceFamily } from '@/lib/config/schema';
 
 /**
  * HERMES-SERVICE-SCOPE-TARGETING-R1 §3-§7 — « cette entreprise vend-elle UNIQUEMENT
@@ -170,7 +170,7 @@ export interface ServiceScopeInput {
 export function assessServiceScope(input: ServiceScopeInput): ServiceScopeAssessment {
   const { evidence, niche } = input;
   const scope = niche.serviceScope;
-  const families: readonly NonCleaningServiceFamily[] = scope.outOfScopeFamilies;
+  const families: readonly OutOfScopeServiceFamily[] = scope.outOfScopeFamilies;
 
   const empty = (verdict: ServiceScopeVerdict, reason: string, surfaceRead: boolean): ServiceScopeAssessment =>
     Object.freeze({

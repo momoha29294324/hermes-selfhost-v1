@@ -44,7 +44,7 @@ function config(applicationName: string): PostgresConfig {
 }
 
 const SLUG = 'service-scope-r1-migration';
-const KEY_PREFIX = 'registry_id:CLEANINGR1';
+const KEY_PREFIX = 'registry_id:SERVICESCOPER1';
 
 describeIfPostgres('HERMES-SERVICE-SCOPE-TARGETING-R1 — migration 0052 sur PostgreSQL réel', () => {
   let sql: Sql;
@@ -65,7 +65,7 @@ describeIfPostgres('HERMES-SERVICE-SCOPE-TARGETING-R1 — migration 0052 sur Pos
 
     const campaign = await sql.query<{ id: string }>(
       `insert into campaigns (slug, name, niche_key, config)
-       values ($1, 'Cleaning-only migration', 'example-services', '{}'::jsonb) returning id`,
+       values ($1, 'Service-scope migration', 'example-services', '{}'::jsonb) returning id`,
       [SLUG],
     );
     campaignId = campaign[0]!.id;

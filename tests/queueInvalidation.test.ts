@@ -75,7 +75,7 @@ beforeEach(async () => {
 });
 
 /** Un prospect en périmètre qui franchit réellement toutes les portes. */
-async function queuedCleaningProspect(handle: string): Promise<{ jobId: string; prospectId: string }> {
+async function queuedInScopeProspect(handle: string): Promise<{ jobId: string; prospectId: string }> {
   const prospect = await sql.query<{ id: string }>(
     `insert into prospects (campaign_id, canonical_key, display_name, instagram_handle, stage)
      values ($1,$2,'ATELIER PRESTATION STANDARD',$3,'message_ready') returning id`,
@@ -135,7 +135,7 @@ async function queuedCleaningProspect(handle: string): Promise<{ jobId: string; 
 
 describe('§10 — un job devenu non conforme est refermé, pas supprimé', () => {
   it('un PENDING dont le site révèle du REVENTE devient INELIGIBLE, avec son motif', async () => {
-    const { jobId, prospectId } = await queuedCleaningProspect('atelier_demo_a');
+    const { jobId, prospectId } = await queuedInScopeProspect('atelier_demo_a');
 
     // L'observation nouvelle : le site vend aussi du film de protection.
     await sql.query(
@@ -176,7 +176,7 @@ describe('§10 — un job devenu non conforme est refermé, pas supprimé', () =
   });
 
   it('le job refermé n’est plus réclamable — jamais consommable', async () => {
-    const { jobId, prospectId } = await queuedCleaningProspect('atelier_demo_b');
+    const { jobId, prospectId } = await queuedInScopeProspect('atelier_demo_b');
     await sql.query(
       `insert into prospect_evidence (prospect_id, field, value_text, provider, method, source_url, confidence)
        values ($1,'services','vente de produits, lustrage','website','crawl','https://example.com',1.0)`,
@@ -189,7 +189,7 @@ describe('§10 — un job devenu non conforme est refermé, pas supprimé', () =
   });
 
   it('la ligne SURVIT : l’histoire du job reste lisible', async () => {
-    const { jobId, prospectId } = await queuedCleaningProspect('atelier_demo_c');
+    const { jobId, prospectId } = await queuedInScopeProspect('atelier_demo_c');
     await sql.query(
       `insert into prospect_evidence (prospect_id, field, value_text, provider, method, source_url, confidence)
        values ($1,'services','boutique en ligne, protection boutique en ligne','website','crawl','https://example.com',1.0)`,
@@ -216,7 +216,7 @@ describe('§10 — un job devenu non conforme est refermé, pas supprimé', () =
   });
 
   it('un refus RECONSIDÉRABLE laisse le job ouvert — on ne condamne pas sur une absence', async () => {
-    const { jobId, prospectId } = await queuedCleaningProspect('atelier_demo_d');
+    const { jobId, prospectId } = await queuedInScopeProspect('atelier_demo_d');
     // L'audience disparaît : c'est un « on ne sait plus », pas un « non ».
     await sql.query(`delete from prospect_audience_observations where prospect_id = $1`, [prospectId]);
 
@@ -230,7 +230,7 @@ describe('§10 — un job devenu non conforme est refermé, pas supprimé', () =
   });
 
   it('un job encore conforme n’est pas touché', async () => {
-    const { jobId } = await queuedCleaningProspect('atelier_demo_e');
+    const { jobId } = await queuedInScopeProspect('atelier_demo_e');
     const report = await invalidateQueueUnderCurrentPolicy(sql, { operator: 'Operator Example', apply: true });
     expect(report.closed).toBe(0);
     expect(report.stillEligible).toBe(1);
@@ -239,7 +239,7 @@ describe('§10 — un job devenu non conforme est refermé, pas supprimé', () =
   });
 
   it('aucun effet externe n’a été tenté par cette commande, sur aucun job', async () => {
-    await queuedCleaningProspect('atelier_demo_f');
+    await queuedInScopeProspect('atelier_demo_f');
     await invalidateQueueUnderCurrentPolicy(sql, { operator: 'Operator Example', apply: true });
     const effects = await sql.query<{ n: number }>(
       `select count(*)::int as n from ig_dispatch_jobs where external_effect_attempted = true`,

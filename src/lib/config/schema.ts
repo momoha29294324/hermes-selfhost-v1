@@ -172,7 +172,7 @@ export const outOfScopeServiceFamilySchema = z.object({
   phrases: z.array(z.string().min(2)).min(1),
 });
 
-export type NonCleaningServiceFamily = z.infer<typeof outOfScopeServiceFamilySchema>;
+export type OutOfScopeServiceFamily = z.infer<typeof outOfScopeServiceFamilySchema>;
 
 /**
  * Le vocabulaire à TROIS niveaux qui sépare « ce commerce ne fait que laver »
