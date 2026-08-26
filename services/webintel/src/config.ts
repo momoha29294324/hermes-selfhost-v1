@@ -1,6 +1,6 @@
 /**
  * Worker configuration. Every value is an environment variable so the systemd
- * unit is the single place where behaviour is set on le serveur.
+ * unit is the single place where behaviour is set on the host.
  *
  * Nothing here is ever logged: `describeConfig()` returns the shape of the
  * config, with the auth token reduced to whether one exists.
@@ -40,7 +40,7 @@ export type LogLevel = (typeof LOG_LEVELS)[number];
 
 /**
  * Engines enabled by default, in the order they were measured to answer from
- * le serveur. Kept in sync with deploy/selfhost/searxng/settings.yml — that file
+ * your server. Keep it in sync with your SearXNG `settings.yml` — that file
  * is the outer bound, this list is what a request actually asks for.
  */
 export const DEFAULT_SEARCH_ENGINES = [

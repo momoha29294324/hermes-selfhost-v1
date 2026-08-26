@@ -351,7 +351,7 @@ class GoogleCseProvider implements WebSearchProvider {
 export function createWebSearchProvider(http: HttpClient, override?: string): WebSearchProvider {
   switch ((override ?? (env('OUTBOUND_SEARCH_PROVIDER', 'none') as string)).toLowerCase()) {
     case 'webintel':
-      // Self-hosted on le serveur: SearXNG + our own crawler. No key, no cost.
+      // Self-hosted: SearXNG + our own crawler. No key, no cost.
       return new WebIntelSearchProvider(http);
     case 'serper':
       return new SerperProvider(http);

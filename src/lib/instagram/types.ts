@@ -42,7 +42,7 @@ export type InstagramSessionState =
    * Une session parfaitement valide — mais celle de QUELQU'UN D'AUTRE.
    *
    * Cet état est né d'un fait, pas d'une précaution. Le 24 août 2026, le
-   * bootstrap sur le serveur a rendu `SESSION_READY` sur une session
+   * bootstrap a rendu `SESSION_READY` sur une session
    * authentifiée comme `bot72882552562736`, alors que le compte de Hermes est
    * `hermes__`. Rien n'avait menti : la session ÉTAIT prête, et les marqueurs
    * d'authentification étaient bien là. Ce que personne ne demandait, c'est

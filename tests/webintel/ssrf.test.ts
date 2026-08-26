@@ -11,7 +11,7 @@ import {
 
 /**
  * The worker fetches URLs chosen by a search engine, on a host that also runs
- * AdGuard, n8n, un projet isole and a Tailscale interface. These tests are the contract
+ * DNS resolvers, internal dashboards and a mesh-VPN interface. These tests are the contract
  * that "fetch this URL" can never become "reach that neighbour".
  */
 describe('classifyAddress — IPv4', () => {
@@ -33,7 +33,7 @@ describe('classifyAddress — IPv4', () => {
     expect(classifyAddress(address)).toEqual({ blocked: true, reason });
   });
 
-  it("refuse l'espace CGNAT, où vit l'adresse Tailscale de le serveur", () => {
+  it("refuse l'espace CGNAT, où vivent les adresses de VPN maillé", () => {
     // 100.122.158.89 is this very host. Allowing 100.64/10 would turn the
     // crawler into a way of reaching every other service on the tailnet.
     expect(classifyAddress('100.122.158.89')).toEqual({ blocked: true, reason: 'cgnat_tailscale' });

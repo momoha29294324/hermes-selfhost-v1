@@ -16,7 +16,7 @@ import type { EvidenceInput } from '@/lib/repo/types';
 import type { PageFacts } from '@/lib/enrichment/websiteExtract';
 
 /**
- * Client for the private Web Intelligence worker on le serveur.
+ * Client for the private Web Intelligence worker you host yourself.
  *
  * The worker searches, resolves and crawls; this file decides what any of that
  * is allowed to change about a prospect. That split is deliberate. The worker

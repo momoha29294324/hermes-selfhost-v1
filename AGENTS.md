@@ -79,11 +79,19 @@ Ce fichier-ci décrit comment on écrit du code ici.
 - Aucun nom de modèle ni niveau d'effort en dur : tout passe par
   `config/models.json` et le `ModelRouter`.
 - Aucune géographie ni vocabulaire de niche en dur : `config/campaigns/`,
-  `config/niches/`.
+  `config/niches/`. Le plancher de personnalisation et l'accroche de premier
+  contact lisent `serviceTerms` et `coreActivityTerms` de la niche pour savoir
+  quels mots ne distinguent RIEN. Sans déclaration, les deux gardes restent
+  actives et simplement plus lâches — jamais absentes, et jamais complétées par
+  une liste écrite dans `src/`.
 - Un accès réseau passe par `HttpClient` (timeout, retries bornés, rate limit,
   robots.txt, cache). Pas de `fetch` nu dans le domaine.
 - Une modification de schéma = une **nouvelle** migration dans `db/migrations/`.
-  Modifier une migration déjà appliquée est refusé par le runner (checksum).
+  Modifier une migration déjà appliquée est refusé par le runner (checksum), et
+  cela vaut pour un COMMENTAIRE : corriger une faute de frappe dans un `--` de
+  `0014` casse `npm run db:migrate` chez tous ceux qui l'ont appliquée.
+  `tests/migrationChecksums.test.ts` gèle l'empreinte des migrations livrées ;
+  quand il échoue, on RESTAURE le fichier, on ne recopie pas l'empreinte.
 - Logs : `logger` structuré uniquement (`no-console` est une erreur de lint).
 - Un worker `--loop` garde le code de son démarrage. Après un changement de
   version de politique ou de classifieur, **redémarrer les loops est
@@ -107,6 +115,11 @@ plafonds jour / heure, espacement    = partagés, un seul compteur
 fenêtre d'envoi                      = un seul ordonnanceur
 activation bornée (--max-effects)    = s'arrête d'elle-même
 premier contact                      = autorisation SÉPARÉE de l'auto-réponse
+                                       (deux tables, deux budgets, deux gestes)
+retrait d'une intention              = simulation par défaut, jamais après un effet
+double réservation                   = refusée par la BASE, pas par le code
+disponibilité non déclarée           = erreur de configuration, jamais « toujours »
+migration déjà publiée               = ne se modifie plus, commentaire compris
 ```
 
 ## Avant de livrer

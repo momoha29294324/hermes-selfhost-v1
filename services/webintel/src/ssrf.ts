@@ -2,10 +2,11 @@
  * SSRF guard.
  *
  * This worker fetches URLs that came out of a search engine — that is, URLs
- * chosen by a third party. It runs on le serveur, next to AdGuard, n8n, un projet isole
- * and a Tailscale interface, so "fetch this URL" must never become "reach that
- * neighbour". Everything in this file is pure so the rules can be tested
- * exhaustively without a network.
+ * chosen by a third party. It runs on your own server, next to whatever else
+ * you host there — a DNS resolver, a dashboard, another project, a mesh-VPN
+ * interface — so "fetch this URL" must never become "reach that neighbour".
+ * Everything in this file is pure so the rules can be tested exhaustively
+ * without a network.
  *
  * Two layers, because either alone is insufficient:
  *   1. `assertSafeUrl` rejects the scheme/shape problems (file:, gopher:,
@@ -15,9 +16,9 @@
  *      then handing the hostname to the socket leaves a window where a
  *      second lookup returns 127.0.0.1 — the classic DNS-rebinding SSRF.
  *
- * Note that 100.64.0.0/10 is blocked: that is CGNAT space, and it is where this
- * host's own Tailscale address lives. Blocking it is the difference between a
- * crawler and a lateral-movement tool.
+ * Note that 100.64.0.0/10 is blocked: that is CGNAT space, and it is where a
+ * mesh VPN (Tailscale and friends) puts this host's own address. Blocking it is
+ * the difference between a crawler and a lateral-movement tool.
  */
 
 export class SsrfError extends Error {

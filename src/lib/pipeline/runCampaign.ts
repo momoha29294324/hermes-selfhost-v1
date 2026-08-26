@@ -252,7 +252,7 @@ export async function runCampaign(options: RunOptions): Promise<{ campaignId: st
       let osmConsecutiveFailures = 0;
       const OSM_BREAKER_LIMIT = 3;
 
-      // Same rule for the Web Intelligence worker. If le serveur is unreachable,
+      // Same rule for the Web Intelligence worker. If the host is unreachable,
       // the run degrades to registry-only data and says so, rather than adding
       // a timeout per prospect for the rest of the campaign.
       const webintel = createWebIntelClient(http);

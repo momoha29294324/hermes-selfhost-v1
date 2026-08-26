@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 596" width="1600" height="596" role="img"
+     aria-labelledby="t d">
+  <title id="t">Hermes — a self-hosted outbound and conversation engine</title>
+  <desc id="d">Six stages run left to right: discover, observe, qualify, write first, reply, book.
+  Only the last three can reach a person, and each of those passes five gates in order: kill switch,
+  activation, pre-send check, caps and window, idempotency. Nothing is armed after install.</desc>
+
+  <style>
+    .mono { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif; }
+    .ink  { fill: #16181D; }
+    .grey { fill: #64676E; }
+    .acc  { fill: #A8461C; }
+  </style>
+
+  <rect x="0" y="0" width="1600" height="596" fill="#FAF9F7"/>
+
+  <!-- ─────────────────────────────────────────────────────────── masthead -->
+  <text class="sans ink" x="96" y="78" font-size="38" font-weight="600" letter-spacing="-0.4">Hermes</text>
+  <text class="sans ink" x="96" y="114" font-size="23" font-weight="500">A self-hosted outbound and conversation engine</text>
+  <text class="sans grey" x="96" y="144" font-size="15">Finds businesses, records what is observed about them, writes first, answers the replies, and books the call.</text>
+  <text class="sans grey" x="96" y="166" font-size="15">Your database, your account, your model provider.</text>
+  <text class="mono acc" x="1504" y="78" font-size="11.5" letter-spacing="1.5" text-anchor="end">SHIPPED EMPTY</text>
+  <g class="sans grey" font-size="13.5" text-anchor="end">
+    <text x="1504" y="102">No ICP, no vertical, no prospects,</text>
+    <text x="1504" y="122">no offer, no message examples.</text>
+    <text x="1504" y="142">Those are yours to write, and the</text>
+    <text x="1504" y="162">setup guide walks you through it.</text>
+  </g>
+  <line x1="96" y1="200" x2="1504" y2="200" stroke="#DCD8D1" stroke-width="1"/>
+
+  <!-- ────────────────────────────────────────────────────────────── spine -->
+  <line x1="120" y1="278" x2="1480" y2="278" stroke="#16181D" stroke-width="1.25"/>
+  <g class="ink">
+    <path d="M330 278 l-8 -4 v8 z"/><path d="M564 278 l-8 -4 v8 z"/><path d="M798 278 l-8 -4 v8 z"/>
+    <path d="M1032 278 l-8 -4 v8 z"/><path d="M1266 278 l-8 -4 v8 z"/><path d="M1480 278 l-10 -5 v10 z"/>
+  </g>
+
+  <g class="mono ink" font-size="13" letter-spacing="1.6" text-anchor="middle">
+    <text x="213"  y="262">DISCOVER</text>
+    <text x="447"  y="262">OBSERVE</text>
+    <text x="681"  y="262">QUALIFY</text>
+    <text x="915"  y="262">WRITE FIRST</text>
+    <text x="1149" y="262">REPLY</text>
+    <text x="1383" y="262">BOOK</text>
+  </g>
+  <g class="ink">
+    <circle cx="213" cy="278" r="5"/><circle cx="447" cy="278" r="5"/><circle cx="681" cy="278" r="5"/>
+    <circle cx="915" cy="278" r="5"/><circle cx="1149" cy="278" r="5"/><circle cx="1383" cy="278" r="5"/>
+  </g>
+  <g class="sans grey" font-size="13.5" text-anchor="middle">
+    <text x="213"  y="308">Registries, maps, the open web</text>
+    <text x="447"  y="308">Each fact keeps its provider and URL</text>
+    <text x="681"  y="308">ICP, scope, audience, reachability</text>
+    <text x="915"  y="308">One message, built from evidence</text>
+    <text x="1149" y="308">Read, understood, answered</text>
+    <text x="1383" y="308">A slot reserved in your database</text>
+  </g>
+
+  <!-- ───────────────────────────────────────────── the boundary that matters -->
+  <path d="M808 336 v10 H1494 v-10" fill="none" stroke="#A8461C" stroke-width="1.25"/>
+  <text class="mono acc" x="1149" y="372" font-size="12" letter-spacing="1.5" text-anchor="middle">THESE THREE CAN REACH A PERSON. ONLY THESE.</text>
+  <line x1="1149" y1="386" x2="1149" y2="414" stroke="#A8461C" stroke-width="1.25"/>
+  <path d="M1149 414 l-4.5 -9 h9 z" fill="#A8461C"/>
+
+  <!-- ──────────────────────────────────────────────────────────── the gates -->
+  <rect x="96" y="414" width="1408" height="98" fill="#F2ECE7" stroke="#E2D6CC" stroke-width="1"/>
+  <text class="mono acc" x="120" y="442" font-size="11.5" letter-spacing="1.5">FIVE GATES, IN THIS ORDER. THE THIRD IS READ AGAIN JUST BEFORE THE CLICK</text>
+
+  <g class="mono ink" font-size="12.5" letter-spacing="0.6">
+    <text x="120"  y="474">KILL SWITCH</text>
+    <text x="404"  y="474">ACTIVATION</text>
+    <text x="688"  y="474">PRE-SEND CHECK</text>
+    <text x="972"  y="474">CAPS &amp; WINDOW</text>
+    <text x="1256" y="474">IDEMPOTENCY</text>
+  </g>
+  <g class="sans grey" font-size="12.5">
+    <text x="120"  y="494">released by a named human</text>
+    <text x="404"  y="494">bounded, dated, revocable</text>
+    <text x="688"  y="494">re-read, not remembered</text>
+    <text x="972"  y="494">one counter, one scheduler</text>
+    <text x="1256" y="494">an attempt is never replayed</text>
+  </g>
+  <g stroke="#E2D6CC" stroke-width="1">
+    <line x1="380" y1="456" x2="380" y2="502"/><line x1="664" y1="456" x2="664" y2="502"/>
+    <line x1="948" y1="456" x2="948" y2="502"/><line x1="1232" y1="456" x2="1232" y2="502"/>
+  </g>
+
+  <!-- ─────────────────────────────────────────────────────────── the default -->
+  <text class="sans ink" x="96" y="560" font-size="16">
+    <tspan class="mono acc" font-size="12.5" letter-spacing="1.5">DEFAULT</tspan><tspan dx="14">Nothing is armed after install. First contact and auto-reply are separate activations, and one never implies the other. A fact nobody observed stays null rather than becoming a guess.</tspan>
+  </text>
+</svg>

@@ -593,14 +593,67 @@ before going further.
 ## Step 13 — First contact stays OFF
 
 Installing Hermes, connecting the account, starting the services and importing
-prospects **must never be enough to send a cold message.** Confirm it:
+prospects **must never be enough to send a cold message.** Confirm all three:
 
 ```bash
 npm run db:psql -- "select count(*) from r6b_batch_votes where actor_kind = 'AUTONOMOUS_POLICY'"
+npm run ig:autonomous:activation      # reads; changes nothing
+npm run autoreply:activation          # reads; changes nothing
 ```
 
-Expect `0`. First contact requires a separate, explicit authorisation the user
-grants deliberately. Do not create one during setup, and do not offer to.
+Expect `0` and two "no live activation".
+
+First contact and auto-reply are **two separate authorisations**, in two
+separate tables, with two separate budgets. Arming one never arms the other, and
+receiving a message has never been enough to authorise sending one. Do not
+create either during setup, and do not offer to.
+
+---
+
+## Step 13b — Booking, if the user wants Hermes to fix the appointment
+
+Optional, and independent of everything above: booking writes to your database,
+it does not send anything. But an agenda that is wrong is worse than no agenda,
+so it gets its own step.
+
+Open `config/booking.json` and go through it **with the user**. The shipped file
+is a neutral starting point, not their availability:
+
+| Key | What it means | Get this from the user |
+|---|---|---|
+| `timezone` | IANA zone the slots are expressed in | **yes** — a wrong zone books at the wrong hour |
+| `weeklyWindows` | when they are actually reachable | **yes** — no default exists |
+| `appointmentDurationMinutes` | how long the slot is **blocked** | yes |
+| `presentedDuration` | what is **announced** to the prospect | yes; must be ≤ the blocked duration |
+| `minNoticeMinutes` | how soon is too soon | yes |
+| `maxHorizonDays` | how far ahead to propose | yes |
+| `maxProposedSlots` | how many options per message | default 2 is usually right |
+| `slotGranularityMinutes` | where slots may start | default 30 is usually right |
+| `calendarKey` | which agenda | leave alone; one agenda in this release |
+
+`weeklyWindows` has **no schema default**, on purpose. A version of this file
+once fell back to "24/7", and an instance that forgot to declare its hours
+proposed a Sunday at 03:00 without anyone deciding that. "Not declared" cannot
+mean "always available".
+
+Verify:
+
+```bash
+npm run booking:agenda        # policy, and an empty agenda
+npm run hermes:certify        # the RENDEZ-VOUS section must be green
+```
+
+**The anti-double-booking guarantee is a PostgreSQL exclusion constraint**, not
+application code. On the file-backed fallback it is enforced but the *race*
+between two connections cannot be exercised. If the user will rely on booking,
+run the real-PostgreSQL test before they do:
+
+```bash
+scripts/pg17-local.sh init
+OUTBOUND_TEST_DATABASE_URL=<disposable-db-url> npx vitest run tests/nativeBookingStorePostgres.test.ts
+```
+
+Nothing in this step sends, proposes or contacts anyone.
 
 ---
 
@@ -613,8 +666,11 @@ There are three runtimes, and **exactly one owner per role**:
 | Role | Command | Sends? |
 |---|---|---|
 | inbound collection | `npm run ig:inbound:run -- --loop` | no — reads only |
-| first contact | `npm run ig:autonomous:worker -- --loop` | **yes**, once authorised |
-| auto-reply | `npm run autoreply:worker -- --loop` | **yes**, once activated |
+| first contact | `npm run ig:autonomous:worker -- --loop` | **yes**, once `ig:autonomous:activation` has armed a budget |
+| auto-reply | `npm run autoreply:worker -- --loop` | **yes**, once `autoreply:activation` has armed a budget |
+
+Both sending runtimes are inert without their own activation row: they look, say
+so, and wait. Starting them is not arming them.
 
 They share one browser profile under an exclusive lease, and each releases it
 after every turn. **Two copies of the same role do not share the work — they
@@ -659,11 +715,24 @@ you act. Not earlier in the conversation, and not implied by "set it up".**
 Ask, in plain words: *"Shall I create a bounded activation that allows Hermes to
 send at most 3 real replies, to real people, and then stop?"*
 
+**Ask about ONE rail.** Auto-reply is the safer canary: the person on the other
+end wrote first, so a reply is expected. First contact reaches somebody who
+asked for nothing, and it deserves its own conversation on another day. Do not
+arm both because you are already in the terminal.
+
 If yes:
 
 ```bash
 npm run autoreply:activation -- --activate --as "<their name>" \
     --reason "<why, in their words>" --max-effects 3
+```
+
+The first-contact equivalent, when that day comes, is the same shape and a
+different table — never a side effect of the command above:
+
+```bash
+npm run ig:autonomous:activation -- --activate --as "<their name>" \
+    --reason "<why>" --max-effects 3
 ```
 
 Then the user — not you — releases the kill switch:
@@ -712,6 +781,12 @@ after reading real outcomes.
   pass.
 - Edit the vertical policy, or try alternative wordings to get a refused
   vertical past it.
+- Arm both rails at once, or treat one activation as covering the other.
+- Edit a migration that has already been applied. Even a comment changes its
+  checksum, and `npm run db:migrate` then refuses on every instance that has
+  applied it. Add a new migration instead; `tests/migrationChecksums.test.ts`
+  exists to catch this before it ships.
+- Widen `weeklyWindows` in `config/booking.json` to make a slot appear.
 - Commit `.env`, `var/`, or any credential.
 - Report a step as done when you could not verify it.
 

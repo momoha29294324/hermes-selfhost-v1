@@ -387,7 +387,7 @@ async function main(): Promise<void> {
       acc[outcome.status] = (acc[outcome.status] ?? 0) + 1;
       return acc;
     }, {}),
-    cost: { externalApiEuros: 0, note: 'SearXNG et crawler auto-hébergés sur le serveur — aucune API payante' },
+    cost: { externalApiEuros: 0, note: 'SearXNG et crawler auto-hébergés — aucune API payante' },
     outcomes,
   };
 
