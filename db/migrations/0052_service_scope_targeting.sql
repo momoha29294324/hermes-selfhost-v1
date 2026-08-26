@@ -1,4 +1,4 @@
--- 0052_in_scope_only_targeting.sql — HERMES-SERVICE-SCOPE-TARGETING-R1.
+-- 0052_in_scope_only_targeting.sql — HERMES-CLEANING-ONLY-ICP-R1.
 --
 -- Ce que cette migration fait, et ce qu'elle refuse de faire
 -- ---------------------------------------------------------

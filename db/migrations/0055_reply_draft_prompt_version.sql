@@ -34,7 +34,7 @@
 --     `create unique index` : aucune donnée n'est touchée ;
 --   * aucun contournement de la parole d'un humain. `loadDraftForAnalysis` fait
 --     désormais gagner un brouillon APPROVED ou EDITED sur un brouillon plus
---     récent mais seulement PROPOSED — un texte qu'un opérateur a corrigé reste le
+--     récent mais seulement PROPOSED — un texte que un opérateur a corrigé reste le
 --     texte qui compte.
 -- ---------------------------------------------------------------------------
 

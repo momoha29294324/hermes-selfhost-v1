@@ -388,7 +388,7 @@ create index r6b_prospect_state_transitions_prospect_idx
 -- ---------------------------------------------------------------------------
 --
 -- Le dépôt n'a AUCUNE intégration CRM : ni code, ni identifiant, ni variable
--- d'environnement, ni sous-compte nommé. Le seul CRM que la machine d'un opérateur
+-- d'environnement, ni sous-compte nommé. Le seul CRM que la machine de un opérateur
 -- connaît appartient à un projet isole, et la documentation d’installation interdit d'y toucher —
 -- y projeter des prospects Hermes serait exactement le genre de « ça a l'air
 -- de marcher » qui pollue une base de production tierce de façon irréversible.

@@ -54,7 +54,7 @@ alter table r6b_dispatch_manifests
 --    `superseded_by` non nul dans tous les cas, ce qui suppose qu'un
 --    remplaçant existe toujours immédiatement. Ce n'est plus vrai pour une
 --    normalisation de taxonomie (§7) : l'ancien lock est invalidé, aucun
---    nouveau lock n'est créé à sa place tant qu'un opérateur n'a pas choisi.
+--    nouveau lock n'est créé à sa place tant que un opérateur n'a pas choisi.
 -- ---------------------------------------------------------------------------
 alter table r6b_dispatch_manifests drop constraint r6b_manifest_superseded_fields;
 alter table r6b_dispatch_manifests add constraint r6b_manifest_superseded_fields check (
