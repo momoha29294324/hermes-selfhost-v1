@@ -290,7 +290,25 @@ export type InstagramSkipReason =
   | 'market_scope_unknown'
   | 'prospect_inactive'
   | 'payload_unavailable'
-  | 'identity_provenance_missing';
+  | 'identity_provenance_missing'
+  /**
+   * HERMES-MANIFEST-OPERATOR-RETIREMENT-R1 — une personne nommée a RETIRÉ cette
+   * intention, avant tout effet extérieur.
+   *
+   * Le seul motif de cette liste qui ne parle ni du prospect, ni de la
+   * plateforme, ni d'une panne : il parle de NOUS. Le prospect peut être
+   * parfaitement éligible et l'identité confirmée — c'est le TEXTE, ou la
+   * décision de l'envoyer, qu'on ne veut plus. Réutiliser `review_required`
+   * aurait mis en file d'attente humaine une ligne qui ne pose aucune question,
+   * et `icp_not_target` aurait accusé le prospect d'un défaut qui n'est pas le
+   * sien.
+   *
+   * TERMINAL sans hésitation : une intention retirée par quelqu'un ne se rouvre
+   * pas parce que l'horloge tourne. Ce qui repart, s'il doit repartir, est une
+   * intention NEUVE — brouillon, vote, manifeste, job — qui repasse toutes les
+   * portes comme la première fois.
+   */
+  | 'operator_retired';
 
 /**
  * Un report qui attend son heure, ou un refus qui n'en attend aucune.
@@ -344,6 +362,8 @@ export const SKIP_REASON_CLASS: Readonly<Record<InstagramSkipReason, InstagramSk
   // reste dans la file, et une preuve d'ancrage le rouvre.
   market_scope_unknown: 'TEMPORARY',
   prospect_inactive: 'TERMINAL',
+  // Un geste humain ne s'annule pas tout seul au prochain réveil du worker.
+  operator_retired: 'TERMINAL',
   payload_unavailable: 'TERMINAL',
   identity_provenance_missing: 'TERMINAL',
 });
@@ -501,7 +521,13 @@ export type InstagramReasonCode =
    */
   | 'IG_ELIGIBILITY_REFUSED'
   /** IG3 §2 — les dix portes d'éligibilité sont franchies. Le seul motif d'entrée en file. */
-  | 'IG_ELIGIBLE';
+  | 'IG_ELIGIBLE'
+  /**
+   * HERMES-MANIFEST-OPERATOR-RETIREMENT-R1 — l'intention a été retirée par un
+   * opérateur nommé, avant tout effet extérieur. Le manifeste passe
+   * `SUPERSEDED`, le job devient absorbant, et rien n'est supprimé.
+   */
+  | 'IG_MANIFEST_RETIRED_BY_OPERATOR';
 
 /** Traduction état de session → motif de refus. Exhaustive par construction. */
 export const SESSION_STATE_BLOCK_CODE: Readonly<Record<Exclude<InstagramSessionState, 'SESSION_READY'>, InstagramBlockCode>> =

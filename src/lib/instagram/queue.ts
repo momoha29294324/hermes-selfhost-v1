@@ -317,6 +317,32 @@ export interface ClaimInput {
    * dans l'ordonnancement d'une exécution, pas dans un plafond d'envoi.
    */
   readonly excludeJobIds?: readonly string[];
+  /**
+   * HERMES-MANIFEST-OPERATOR-RETIREMENT-R1.1 — prendre le bail d'un job qui
+   * n'est PAS encore dû.
+   *
+   * `not_before` est une borne d'ORDONNANCEMENT : elle répond à « est-ce le
+   * moment de l'exécuter ? ». Un worker doit la respecter, et rien ici ne
+   * change pour lui — l'option est absente par défaut, et le SQL retombe alors
+   * mot pour mot sur la condition d'avant.
+   *
+   * Elle n'a en revanche aucun sens pour un geste qui FERME l'intention : le
+   * retrait ne veut pas exécuter le job, il veut le rendre inexécutable, et
+   * exiger qu'il soit d'abord exécutable est un raisonnement circulaire.
+   *
+   * Le défaut a été vécu le 25 août 2026 : les trois manifestes à retirer
+   * portaient des jobs `SKIPPED` reportés à l'ouverture de la fenêtre suivante
+   * (`not_before = J+1 07:00`). La prise ne rendait aucune ligne, donc le
+   * retrait était IMPOSSIBLE — exactement dans l'état où un retrait est le plus
+   * utile, puisque le message n'est pas encore parti.
+   *
+   * Ce que cette option NE desserre PAS : les statuts réclamables, le
+   * `for update skip locked`, le bail vivant d'un autre worker — que
+   * `assessManifestRetirement` refuse AVANT d'arriver ici
+   * (`JOB_LEASE_HELD`) —, et la borne `not_before` du chemin d'ENVOI, qui
+   * n'appelle jamais avec cette option.
+   */
+  readonly ignoreSchedule?: boolean;
 }
 
 /**
@@ -350,7 +376,7 @@ export async function claimNextInstagramJob(sql: Sql, input: ClaimInput): Promis
         select c.id
           from ig_dispatch_jobs c
          where c.status = any($3::text[])
-           and c.not_before <= now()
+           and ($6::boolean or c.not_before <= now())
            and ($4::uuid is null or c.id = $4::uuid)
            and not (c.id = any($5::uuid[]))
          order by c.not_before asc, c.created_at asc
@@ -364,6 +390,7 @@ export async function claimNextInstagramJob(sql: Sql, input: ClaimInput): Promis
       [...CLAIMABLE_JOB_STATUSES],
       input.jobId ?? null,
       [...(input.excludeJobIds ?? [])],
+      input.ignoreSchedule === true,
     ],
   );
   return rows[0] ?? null;

@@ -74,6 +74,7 @@
     "ig:queue": "tsx src/cli/ig-queue.ts",
     "ig:queue:reevaluate": "tsx src/cli/ig-queue-reevaluate.ts",
     "ig:queue:invalidate": "tsx src/cli/ig-queue-invalidate.ts",
+    "ig:manifest:retire": "tsx src/cli/ig-manifest-retire.ts",
     "ig:worker": "tsx src/cli/ig-worker.ts",
     "ig:dry-run": "tsx src/cli/ig-dry-run.ts",
     "ig:canary": "tsx src/cli/ig-canary.ts",
